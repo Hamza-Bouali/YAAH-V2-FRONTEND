@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Plus,Siren } from 'lucide-react';
 import AppointmentModal from '../components/AppointmentModal';
 import ClientModal from '../components/ClientModal';
 import { se } from 'date-fns/locale';
+import {Appointment, getAppointments } from '../components/models/Appointements';
 
 // Mock clients data
 const mockClients = [
@@ -12,19 +13,13 @@ const mockClients = [
   { id: 3, name: 'Alice Johnson' },
 ];
 
-interface Appointment {
-  id: number;
-  patient: string;
-  time: string;
-  type: string;
-  date: string;
-  place: string;
-}
+
 
 // Mock initial appointments data
 const mockAppointments = [
   {
     id: 1,
+    patientID: 1,
     patient: 'John Doe',
     time: '09:00 AM',
     type: 'Check-up',
@@ -33,6 +28,7 @@ const mockAppointments = [
   },
   {
     id: 2,
+    patientID: 2,
     patient: 'Jane Smith',
     time: '10:00 AM',
     type: 'Follow-up',
@@ -63,10 +59,10 @@ function Appointments() {
   };
 
   const addAppointment = (newAppointment: {
-    patient: string;
     date: string;
     time: string;
     type: string;
+    patientID: number;
     place: string;
   }) => {
     const appointment = {
@@ -174,7 +170,7 @@ function Appointments() {
                       }}
                       >
                       <Siren className="w-4 h-4 mr-2" />
-                      <div className="font-medium">{appointment.patient}</div>
+                      <div className="font-medium">{appointment.patientID}</div>
                       <div className="text-xs">{appointment.type}</div>
                       </div>
                     ) : (

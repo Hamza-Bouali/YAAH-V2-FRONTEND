@@ -1,19 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react';
 import { format, parse } from 'date-fns';
+import { Appointment } from './models/Appointements';
 
-interface AppointmentProps {
-  patient: string;
-  date: string;
-  time: string;
-  type: string;
-  place: string;
-}
+
 
 interface AppointmentModalProps {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  addAppointment: (newAppointment: AppointmentProps) => void;
+  addAppointment: (newAppointment: Appointment) => void;
   selectedClient: string;
   setSelectedClient: React.Dispatch<React.SetStateAction<string>>;
   openClientModal: () => void;
@@ -52,6 +47,8 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({
       const formattedTime = format(parsedTime, 'hh:mm a');
 
       addAppointment({
+        id: Math.floor(Math.random() * 1000),
+        patientID: parseInt(selectedClient) || 0,
         patient: selectedClient,
         date,
         time: formattedTime,

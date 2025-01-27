@@ -46,6 +46,24 @@ export interface PatientData {
 }
 
 export const getPatients = async (): Promise<PatientData[]> => {
-    const response = await axios.get('http://localhost:3001/patients');
+    const response = await axios.get('http://localhost:8000/api/patients');
     return response.data;
 }
+
+export const getPatient = async (id: number): Promise<PatientData> => {
+    const response = await axios.get(`http://localhost:8000/api/patients/${id}`);
+    return response.data;
+}
+
+export const addPatient = async (patient: PatientData): Promise<void> => {
+    await axios.post('http://localhost:8000/api/patients', patient);
+}
+
+export const deletePatient = async (id: number): Promise<void> => {
+    await axios.delete(`http://localhost:8000/api/patients/${id}`);
+}
+
+export const updatePatient = async (patient: PatientData): Promise<void> => {
+    await axios.put(`http://localhost:8000/api/patients/${patient.id}`, patient);
+}
+

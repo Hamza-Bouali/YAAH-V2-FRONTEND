@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import PatientDataPage from '../pages/PatientData'; // Adjust the import path as needed
-
 
 export interface PatientData {
   id: string;
@@ -25,7 +23,6 @@ export interface PatientData {
   dob: string;
   bloodType: string;
   nextAppointment: string;
-  medications: string[];
   allergies: string[];
   recentVisits: {
       date: string;
@@ -109,13 +106,13 @@ export const usePatients = () => {
 
     fetchPatients();
   }, []);
-  /*const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPatients = async () => {
       try {
-        const response = await axios.get('http://localhost:3001/patients');
+        const response = await axios.get('http://localhost:8000/api/patients/');
         setPatients(response.data);
       } catch (err) {
         setError('Failed to fetch patients');
@@ -125,7 +122,7 @@ export const usePatients = () => {
     };
 
     fetchPatients();
-  }, []);*/
+  }, []);
 
   return  patients /*loading, error*/ ;
 };

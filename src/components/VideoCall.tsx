@@ -49,8 +49,8 @@ const VideoCall: React.FC<VideoCallProps> = ({ isMicMuted, isVideoOff, onEndCall
   };
 
   return (
-    <div>
-      <video ref={localVideoRef} autoPlay muted playsInline className="w-full h-full rounded-xl"></video>
+    <div className="relative w-full h-full">
+      <video ref={localVideoRef} autoPlay muted playsInline className="w-full h-full min-w-full min-h-full rounded-xl"></video>
       <button onClick={handleEndCall} className="mt-4 p-2 bg-red-500 text-white rounded">End Call</button>
     </div>
   );
