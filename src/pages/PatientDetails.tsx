@@ -1,5 +1,6 @@
 import  { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { PatientData } from '../hooks/usePatients';
 import { 
   User, 
   Calendar, 
@@ -24,21 +25,10 @@ function PatientDetails() {
   const  patients  = usePatients(); // Move hook to component level
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const patientId = id ? parseInt(id, 10) : 0;
+  const patientId = id?.toString();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
-  const [patient, setPatient] = useState<{
-    id: string;
-    name: string;
-    dob: string;
-    age: number;
-    phone: string;
-    email: string;
-    bloodType: string;
-    medications: string[];
-    allergies: string[];
-    recentVisits: Visit[];
-  }>({
+  const [patient, setPatient] = useState<PatientData>({
     id: '',
     name: '',
     dob: '',
@@ -46,15 +36,21 @@ function PatientDetails() {
     phone: '',
     email: '',
     bloodType: '',
-    medications: [],
+    prescriptions: [],
     allergies: [],
-    recentVisits: []
+    recent_visits: [],
+    last_visit: '',
+    next_appointment: '',
+    diseases: [],
+    treatment: '',
+    address: '',
+    next_visit: '',
   });
 
   useEffect(() => {
     const fetchPatient = () => {
       try {
-        const foundPatient = patients?.find(p => p.id.toString() === patientId.toString());
+        const foundPatient = patients?.find(p => p.id.toString() === patientId);
         if (foundPatient) {
           setPatient({
             ...patient,
@@ -97,7 +93,7 @@ function PatientDetails() {
     if (newMedication.trim()) {
       setPatient(prev => ({
         ...prev,
-        medications: [...prev.medications, newMedication.trim()]
+        medications: [...prev.prescriptions, newMedication.trim()]
       }));
       setNewMedication("");
     }
@@ -106,7 +102,7 @@ function PatientDetails() {
   const removeMedication = (index: number) => {
     setPatient(prev => ({
       ...prev,
-      medications: prev.medications.filter((_, i) => i !== index)
+      medications: prev.prescriptions.filter((_, i) => i !== index)
     }));
   };
 
@@ -131,7 +127,7 @@ function PatientDetails() {
     if (newVisit.date && newVisit.reason && newVisit.doctor) {
       setPatient(prev => ({
         ...prev,
-        recentVisits: [newVisit, ...prev.recentVisits]
+        recentVisits: [newVisit, ...prev.recent_visits]
       }));
       setNewVisit({ date: "", reason: "", doctor: "" });
     }
@@ -140,7 +136,7 @@ function PatientDetails() {
   const removeVisit = (index: number) => {
     setPatient(prev => ({
       ...prev,
-      recentVisits: prev.recentVisits.filter((_, i) => i !== index)
+      recentVisits: prev.recent_visits.filter((_, i) => i !== index)
     }));
   };
 
@@ -285,7 +281,7 @@ function PatientDetails() {
                   <input
                     type="text"
                     value={newMedication}
-                    onChange={(e) => setPatient(prev => ({ ...prev, medications: [...prev.medications, e.target.value] }))}
+                    onChange={(e) => setPatient(prev => ({ ...prev, medications: [...prev.prescriptions, e.target.value] }))}
                     placeholder="Add new medication"
                     className="flex-1 px-3 py-2 border rounded"
                   />
@@ -298,7 +294,7 @@ function PatientDetails() {
                 </div>
               )}
               <ul className="space-y-2">
-                {patient.medications.map((med, index) => (
+                {patient.prescriptions.map((med, index) => (
                   <li key={index} className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
@@ -405,12 +401,12 @@ function PatientDetails() {
                 </div>
               )}
               <div className="space-y-4">
-                {patient.recentVisits.map((visit, index) => (
+                {patient.recent_visits.map((visit, index) => (
                   <div key={index} className="border-l-4 border-green-500 pl-4 py-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2 text-sm text-gray-500">
                         <Clock className="h-4 w-4" />
-                        <span>{visit.date}</span>
+                        <span>{visit}</span>
                       </div>
                       {isEditing && (
                         <button
@@ -421,8 +417,7 @@ function PatientDetails() {
                         </button>
                       )}
                     </div>
-                    <p className="text-gray-900 font-medium">{visit.reason}</p>
-                    <p className="text-gray-600">{visit.doctor}</p>
+                    
                   </div>
                 ))}
               </div>
@@ -435,10 +430,6 @@ function PatientDetails() {
 }
 
 export default PatientDetails;
-interface Visit {
-  date: string;
-  reason: string;
-  doctor: string;
-}
+
 
 
