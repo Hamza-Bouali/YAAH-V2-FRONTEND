@@ -13,20 +13,21 @@ const LoadingSkeleton = () => (
 );
 
 function Patients() {
-  const  patients /*loading, error */ = usePatients();
+  const  {patients ,loading, error } = usePatients();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
 
   // Filter patients based on search query
   const filteredPatients = patients?.filter((patient) =>
-    patient.name.toLowerCase().includes(searchQuery.toLowerCase())
+    patient?.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Display loading state
-  //if (loading) return <div className="p-8"><LoadingSkeleton /></div>;
+  if (loading) return <div className="p-8"><LoadingSkeleton /></div>;
 
   // Display error state
   //if (error) return <div className="p-8 text-red-500">{error}</div>;
+
 
   return (
     <div className="p-8">
@@ -91,8 +92,8 @@ function Patients() {
                     <div className="text-gray-900">{patient.phone}</div>
                     <div className="text-gray-500 text-sm">{patient.email}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-500">{patient.lastVisit}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-500">{patient.nextAppointment}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-500">{patient.last_visit}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-500">{patient.next_appointment}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium mr-4">
                     <button 
                       onClick={() => navigate(`/patient/${patient.id}`)}

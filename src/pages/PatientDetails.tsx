@@ -1,6 +1,6 @@
 import  { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PatientData } from '../hooks/usePatients';
+import { PatientData,updatePatient } from '../hooks/usePatients';
 import { 
   User, 
   Calendar, 
@@ -35,7 +35,7 @@ function PatientDetails() {
     age: 0,
     phone: '',
     email: '',
-    bloodType: '',
+    blood_type: '',
     prescriptions: [],
     allergies: [],
     recent_visits: [],
@@ -45,24 +45,22 @@ function PatientDetails() {
     treatment: '',
     address: '',
     next_visit: '',
+    medications: []
   });
 
   useEffect(() => {
-    const fetchPatient = () => {
+    // Fetch patient data and update state
+    const fetchPatient = async () => {
       try {
-        const foundPatient = patients?.find(p => p.id.toString() === patientId);
-        if (foundPatient) {
-          setPatient({
-            ...patient,
-            ...foundPatient,
-            id: foundPatient.id.toString()
-          });
+        setLoading(true);
+        const fetchedPatient = patients?.find(p => p.id === patientId);
+        if (fetchedPatient) {
+          setPatient(fetchedPatient);
         } else {
           setError('Patient not found');
         }
       } catch (err) {
         setError('Error fetching patient data');
-        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -72,6 +70,7 @@ function PatientDetails() {
   }, [patientId, patients]);
 
   const [newMedication, setNewMedication] = useState("");
+
   const [newAllergy, setNewAllergy] = useState("");
   const [newVisit, setNewVisit] = useState({
     date: "",
@@ -89,38 +88,47 @@ function PatientDetails() {
     setIsEditing(false);
   };
 
+ 
   const addMedication = () => {
     if (newMedication.trim()) {
       setPatient(prev => ({
         ...prev,
-        medications: [...prev.prescriptions, newMedication.trim()]
+        // Change medications to prescriptions
+        prescriptions: [...prev.prescriptions, newMedication.trim()]
       }));
       setNewMedication("");
     }
+    console.log('Adding medication, updated patient data:', patient);
+    updatePatient(patient.id || "0", patient);
   };
 
   const removeMedication = (index: number) => {
     setPatient(prev => ({
       ...prev,
-      medications: prev.prescriptions.filter((_, i) => i !== index)
+      // Change medications to prescriptions
+      prescriptions: prev.prescriptions.filter((_, i) => i !== index)
     }));
+    console.log('Removing medication, updated patient data:', patient);
+    updatePatient(patient.id, patient);
   };
 
   const addAllergy = () => {
     if (newAllergy.trim()) {
-      setPatient(prev => ({
-        ...prev,
-        allergies: [...prev.allergies, newAllergy.trim()]
-      }));
-      setNewAllergy("");
+        const updatedAllergies = [...patient.allergies, newAllergy.trim()];
+        setPatient(prev => ({ ...prev, allergies: updatedAllergies }));
+        updatePatient(patient.id, { allergies: updatedAllergies });
+        setNewAllergy("");
     }
-  };
+};
+
 
   const removeAllergy = (index: number) => {
     setPatient(prev => ({
       ...prev,
-      allergies: prev.allergies.filter((_, i) => i !== index)
+      allergies: prev.allergies?.filter((_, i) => i !== index)
     }));
+
+    updatePatient(patient.id || "0",patient);
   };
 
   const addVisit = () => {
@@ -131,14 +139,19 @@ function PatientDetails() {
       }));
       setNewVisit({ date: "", reason: "", doctor: "" });
     }
+
+    updatePatient(patient.id || "0",patient);
   };
 
   const removeVisit = (index: number) => {
     setPatient(prev => ({
       ...prev,
-      recentVisits: prev.recent_visits.filter((_, i) => i !== index)
+      recentVisits: prev.recent_visits?.filter((_, i) => i !== index)
     }));
+    console.log(patient);
+    updatePatient(patient.id || "0",patient);
   };
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -252,7 +265,7 @@ function PatientDetails() {
                   <Activity className="h-5 w-5 text-gray-400" />
                   {isEditing ? (
                     <select
-                      value={patient.bloodType}
+                      value={patient.blood_type}
                       onChange={(e) => setPatient(prev => ({ ...prev, bloodType: e.target.value }))}
                       className="flex-1 px-2 py-1 border rounded"
                     >
@@ -261,7 +274,7 @@ function PatientDetails() {
                       ))}
                     </select>
                   ) : (
-                    <span className="text-gray-600">Blood Type: {patient.bloodType}</span>
+                    <span className="text-gray-600">Blood Type: {patient.blood_type}</span>
                   )}
                 </div>
               </div>
@@ -281,7 +294,7 @@ function PatientDetails() {
                   <input
                     type="text"
                     value={newMedication}
-                    onChange={(e) => setPatient(prev => ({ ...prev, medications: [...prev.prescriptions, e.target.value] }))}
+                    onChange={(e) => setNewMedication(e.target.value)}
                     placeholder="Add new medication"
                     className="flex-1 px-3 py-2 border rounded"
                   />

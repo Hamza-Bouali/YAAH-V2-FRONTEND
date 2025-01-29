@@ -1,121 +1,112 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-export interface PatientData {
+// Define interfaces based on your backend API responses.
+interface Prescription {
   id: string;
-  prescription: {
-      medication: string;
-      dosage: string;
-      frequency: string;
-      startDate: string;
-      endDate: string;
-      status: string;
-      duration: string;
-  }[];
-  name: string;
-  age: number;
-  email: string;
-  treatment: string;
-  diseases: string[];
-  phone: string;
-  address: string;
-  lastVisit: string;
-  dob: string;
-  bloodType: string;
-  nextAppointment: string;
-  allergies: string[];
-  recentVisits: {
-      date: string;
-      reason: string;
-      doctor: string;
-  }[];
+  medication: string;
+  dosage: string;
+  frequency: string;
+  start_date: string;
+  end_date: string;
+  status: string;
 }
 
+interface Disease {
+  id: string;
+  name: string;
+  description: string;
+}
+
+interface Allergy {
+  id: string;
+  name: string;
+  description: string;
+}
+
+interface Visit {
+  id: string;
+  date: string;
+  reason: string;
+  doctor: string;
+  notes: string;
+}
+
+interface Appointment {
+  id: string;
+  date: string;
+  time: string;
+  doctor: string;
+  status: string;
+  notes: string;
+}
+
+export interface PatientData {
+  id: string;
+  name: string;
+  dob: string;
+  age: number;
+  phone: string;
+  email: string;
+  blood_type: string;
+  address: string;
+  treatment: string;
+  prescriptions: Prescription[];
+  diseases: Disease[];
+  allergies: Allergy[];
+  visits: Visit[];
+  appointments: Appointment[];
+}
 
 export const usePatients = () => {
-  const [patients, setPatients] = useState<PatientData[]>();
-
-  useEffect(() => {
-    const fetchPatients = async () => {
-      try {
-        setPatients([
-          {
-            id: '1',
-            name: 'John Doe',
-            prescription: [
-              {
-                medication: 'Medication A',
-                dosage: '10mg',
-                frequency: 'Once a day',
-                status: 'Active',
-                duration: '30 days',
-                startDate: '2024-02-15',
-                endDate: '2024-03-15',
-              }
-            ],
-            age: 30,
-            treatment: 'None',
-            email: 'john.doe@example.com',
-            phone: '(555) 123-4567',
-            lastVisit: '2024-02-15',
-            dob: '1994-05-20',
-            bloodType: 'O+',
-            diseases: ['Hypertension'],
-            nextAppointment: '2024-03-15',
-            address: '123 Main St, Anytown, USA',
-            medications: ['Medication A', 'Medication B'],
-            allergies: ['Peanuts', 'Shellfish'],
-            recentVisits: [
-              {
-                date: '2023-12-01',
-                reason: 'Routine Checkup',
-                  doctor: 'Dr. Smith',
-              }]
-              },
-            
-          
-          {
-            id: '2',
-            treatment: 'None',
-            name: 'Jane Smith',
-            diseases: ['None'],
-            prescription: [],
-            age: 25,
-            email: 'jane.smith@example.com',
-            phone: '(555) 987-6543',
-            lastVisit: '2024-01-10',
-            nextAppointment: '2024-02-10',
-            address: '456 Elm St, Othertown, USA',
-            dob: '1998-08-15',
-            bloodType: 'A-',
-            medications: ['Medication C'],
-            allergies: ['None'],
-            recentVisits: [
-              {
-                date: '2023-11-20',
-                reason: 'Flu Symptoms',
-                doctor: 'Dr. Johnson',
-              },
-            ],
-          },
-        ]);
-      } catch (err) {
-        console.error('Failed to fetch patients:', err);
-      }
-    };
-
-    fetchPatients();
-  }, []);
+  const [patients, setPatients] = useState<PatientData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPatients = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/api/patients/');
-        setPatients(response.data);
+        const response = await axios.get('http://127.0.0.1:8000/api/patients/');
+        const prescriptionsResponse = await axios.get('http://localhost:8000/api/prescriptions/');
+        const diseasesResponse = await axios.get('http://localhost:8000/api/diseases/');
+        const allergiesResponse = await axios.get('http://localhost:8000/api/allergies/');
+        const visitsResponse = await axios.get('http://localhost:8000/api/visits/');
+        const appointmentsResponse = await axios.get('http://localhost:8000/api/appointments/');
+
+        // First, get all the related data
+        const patientsData = response.data;
+        const prescriptionsData = prescriptionsResponse.data;
+        const diseasesData = diseasesResponse.data;
+        const allergiesData = allergiesResponse.data;
+        const visitsData = visitsResponse.data;
+        const appointmentsData = appointmentsResponse.data;
+
+        // Map through patients and join with related data
+        const updatedPatients = patientsData.map((patient: PatientData) => ({
+            ...patient,
+            // For each relation, check if array exists before mapping
+            prescriptions: (patient.prescriptions || []).map(prescId => 
+          prescriptionsData.find((p: Prescription) => p.id == prescId)
+            ).filter(Boolean),
+            diseases: (patient.diseases || []).map(diseaseId => 
+          diseasesData.find((d: Disease) => d.id == diseaseId)
+            ).filter(Boolean),
+            allergies: (patient.allergies || []).map(allergyId => 
+          allergiesData.find((a: Allergy) => a.id == allergyId)
+            ).filter(Boolean),
+            visits: (patient.visit || []).map(visitId => 
+          visitsData.find((v: Visit) => v.id == visitId)
+            ).filter(Boolean),
+            appointments: (patient.appointments || []).map(appointmentId => 
+          appointmentsData.find((a: Appointment) => a.id == appointmentId)
+            ).filter(Boolean)
+        }));
+
+        setPatients(updatedPatients);
+        console.log('Patients:', patients);
+        console.log('Patients:', updatedPatients);
       } catch (err) {
-        setError('Failed to fetch patients');
+        setError('Failed to fetch patient data');
       } finally {
         setLoading(false);
       }
@@ -124,5 +115,38 @@ export const usePatients = () => {
     fetchPatients();
   }, []);
 
-  return  patients /*loading, error*/ ;
+  return { patients, loading, error };
+};
+
+// Function to add, update or delete patient data as needed based on Django models
+export const addPatient = async (patient: PatientData) => {
+  try {
+    const response = await axios.post('http://localhost:8000/api/patients/', patient);
+    return { success: true, data: response.data };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: err.message };
+  }
+};
+
+export const updatePatient = async (id: string, updates: Partial<PatientData>) => {
+  try {
+    const response = await axios.put(`http://localhost:8000/api/patients/${id}/`, updates, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    return { success: true, data: response.data };
+  } catch (err) {
+    console.error('Update failed:', err?.response?.data || err?.message);
+    return { success: false, error: err.message };
+  }
+};
+
+export const deletePatient = async (id: string) => {
+  try {
+    await axios.delete(`http://localhost:8000/api/patients/${id}/`);
+    return { success: true };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: err.message };
+  }
 };

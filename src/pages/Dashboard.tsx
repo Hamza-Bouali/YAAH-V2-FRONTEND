@@ -1,6 +1,7 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { usePatients } from '../hooks/usePatients';
+import axios from 'axios';
 
 function Dashboard() {
   // Sample data for charts
@@ -33,7 +34,7 @@ function Dashboard() {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
   // Sample patient data for diseases, medications, and treatments
-  const patientData = usePatients();
+  const { patients, loading, error } = usePatients();
 
   return (
     <div className="p-8">
@@ -185,22 +186,23 @@ function Dashboard() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {patientData?.map((patient) => (
+              {patients?.map((patient) => (
                 <tr key={patient.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="font-medium text-gray-900">{patient.name}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                    {patient.diseases}
+                      {Array.isArray(patient.diseases) ? 
+                        patient.diseases.map((disease, index) => (
+                          <span key={index} className="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-800 mr-2">
+                            {disease.name}
+                          </span>
+                        )) : 
+                        <span className="text-gray-500">No diseases</span>
+                      }
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                    {patient.medications.map((medication, index) => {
-                      return (
-                        <span key={index} className="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-800 mr-2">
-                          {medication}
-                        </span>
-                      );
-                    })}
+                    {}
                   </td>
                   
                   <td className="px-6 py-4 whitespace-nowrap text-gray-500">
