@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axiosInstance from '../components/models/AxiosInstance';
+import axios from 'axios';
 
 interface LoginProps {
   setIsAuthenticated: (value: boolean) => void;
@@ -13,21 +15,39 @@ function Login({ setIsAuthenticated }: LoginProps) {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
-    e.preventDefault();
-    if (!username || !password) {
-      setError('Please fill in all fields.');
-      return;
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault(); // Prevent form submission default behavior
+    
+    try {
+      const response = await axiosInstance.post('/api/login/', {
+        username: username,
+        password: password,
+      });
+      
+      const { access, refresh } = response.data;
+      localStorage.setItem('access_token', access);
+      localStorage.setItem('refresh_token', refresh);
+      console.log('Login successful');
+      setIsAuthenticated(true);
+      setError('');
+      navigate('/dashboard');
+    } catch (error: any) {
+      console.error('Login failed:', error);
+      
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNABORTED') {
+          setError('Connection timed out. Please check if the server is running.');
+        } else if (error.response?.status === 404) {
+          setError('Login endpoint not found. Please check API configuration.');
+        } else if (error.response?.status === 401) {
+          setError('Invalid credentials.');
+        } else if (!error.response) {
+          setError('Network error. Please check if the server is running.');
+        } else {
+          setError('An error occurred during login. Please try again.');
+        }
+      }
     }
-    setError('');
-    if (role === 'doctor') {
-      navigate('/');
-    } else if (role === 'patient') {
-      navigate('/patient-dashboard');
-    } else if (role === 'medical') {
-      navigate('/medical-dashboard');
-    }
-    setIsAuthenticated(true);
   };
 
   return (

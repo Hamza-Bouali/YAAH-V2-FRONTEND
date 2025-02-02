@@ -1,33 +1,48 @@
-import  { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PatientData,updatePatient } from '../hooks/usePatients';
-import { 
-  User, 
-  Calendar, 
-  Phone, 
-  Mail, 
-  Activity, 
-  Pill, 
-  AlertCircle, 
-  FileText, 
+import { PatientData, Visit } from '../hooks/usePatients';
+import {
+  User,
+  Calendar,
+  Phone,
+  Mail,
+  Activity,
+  Pill,
+  AlertCircle,
+  FileText,
   Clock,
   Edit2,
   Save,
   X,
   Plus,
+  ArrowLeft,
+  LucideBriefcase,
   Trash2,
-  ArrowLeft
 } from 'lucide-react';
 import { usePatients } from '../hooks/usePatients';
+import axios from 'axios';
+
+
+
+
+const LoadingSkeleton = () => (
+  <div className="animate-pulse space-y-4">
+    {[...Array(5)].map((_, index) => (
+      <div key={index} className="h-12 bg-gray-200 rounded-lg"></div>
+    ))}
+  </div>
+);
+
 
 function PatientDetails() {
   const { id } = useParams<{ id: string }>();
-  const  patients  = usePatients(); // Move hook to component level
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { patients } = usePatients();
   const patientId = id?.toString();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
+  const [visits, setVisits] = useState<Visit[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [patient, setPatient] = useState<PatientData>({
     id: '',
     name: '',
@@ -36,47 +51,53 @@ function PatientDetails() {
     phone: '',
     email: '',
     blood_type: '',
-    prescriptions: [],
-    allergies: [],
-    recent_visits: [],
-    last_visit: '',
-    next_appointment: '',
-    diseases: [],
-    treatment: '',
     address: '',
-    next_visit: '',
-    medications: []
+    disease: [],
+    visit: [],
+    appointment: [],
+    treatment: '',
+    allergies: [],
+  });
+
+  const [newMedication, setNewMedication] = useState('');
+  const [newAllergy, setNewAllergy] = useState('');
+  const [newVisit, setNewVisit] = useState<Visit>({
+    id: '',
+    date: '',
+    reason: '',
+    notes: '',
+    created_at: '',
   });
 
   useEffect(() => {
-    // Fetch patient data and update state
-    const fetchPatient = async () => {
+    const fetchPatientAndVisits = async () => {
       try {
         setLoading(true);
-        const fetchedPatient = patients?.find(p => p.id === patientId);
+        const fetchedPatient = patients?.find((p) => p.id === patientId);
+        console.log(fetchedPatient);
         if (fetchedPatient) {
           setPatient(fetchedPatient);
-        } else {
-          setError('Patient not found');
+          const visitIds = fetchedPatient.visit.map((v) => v);
+          if (visitIds.length > 0) {
+            visitIds.forEach(async (id) => {
+              const { data } = await axios.get<Visit>(`http://127.0.0.1:8000/api/visits/${id}`);
+              console.log(data);
+              setVisits((prev) => [data, ...prev]);
+            });
+          }
         }
       } catch (err) {
-        setError('Error fetching patient data');
+        setError('Failed to fetch patient data');
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPatient();
+    if (patientId) {
+      fetchPatientAndVisits();
+    }
   }, [patientId, patients]);
-
-  const [newMedication, setNewMedication] = useState("");
-
-  const [newAllergy, setNewAllergy] = useState("");
-  const [newVisit, setNewVisit] = useState({
-    date: "",
-    reason: "",
-    doctor: ""
-  });
 
   const handleSave = () => {
     // Here you would typically make an API call to save the changes
@@ -87,71 +108,50 @@ function PatientDetails() {
     // Reset any unsaved changes
     setIsEditing(false);
   };
-
- 
+/*
   const addMedication = () => {
     if (newMedication.trim()) {
-      setPatient(prev => ({
+      setPatient((prev) => ({
         ...prev,
-        // Change medications to prescriptions
-        prescriptions: [...prev.prescriptions, newMedication.trim()]
+        prescriptions: [...(prev.prescriptions || []), newMedication.trim()],
       }));
-      setNewMedication("");
+      setNewMedication('');
     }
-    console.log('Adding medication, updated patient data:', patient);
-    updatePatient(patient.id || "0", patient);
-  };
+  };*/
 
-  const removeMedication = (index: number) => {
-    setPatient(prev => ({
+  /*const removeMedication = (index: number) => {
+    setPatient((prev) => ({
       ...prev,
-      // Change medications to prescriptions
-      prescriptions: prev.prescriptions.filter((_, i) => i !== index)
+      prescriptions: prev.prescriptions?.filter((_, i) => i !== index),
     }));
-    console.log('Removing medication, updated patient data:', patient);
-    updatePatient(patient.id, patient);
-  };
+  };*/
 
   const addAllergy = () => {
     if (newAllergy.trim()) {
-        const updatedAllergies = [...patient.allergies, newAllergy.trim()];
-        setPatient(prev => ({ ...prev, allergies: updatedAllergies }));
-        updatePatient(patient.id, { allergies: updatedAllergies });
-        setNewAllergy("");
+      setPatient((prev) => ({
+        ...prev,
+        allergies: [...(prev.allergies || []), { id: Date.now().toString(), name: newAllergy.trim(), description: '' }],
+      }));
+      setNewAllergy('');
     }
-};
-
+  };
 
   const removeAllergy = (index: number) => {
-    setPatient(prev => ({
+    setPatient((prev) => ({
       ...prev,
-      allergies: prev.allergies?.filter((_, i) => i !== index)
+      allergies: prev.allergies?.filter((_, i) => i !== index),
     }));
-
-    updatePatient(patient.id || "0",patient);
   };
 
   const addVisit = () => {
-    if (newVisit.date && newVisit.reason && newVisit.doctor) {
-      setPatient(prev => ({
-        ...prev,
-        recentVisits: [newVisit, ...prev.recent_visits]
-      }));
-      setNewVisit({ date: "", reason: "", doctor: "" });
+    if (newVisit.date && newVisit.reason) {
+      setVisits((prev) => [newVisit, ...prev]);
+      setNewVisit({ id: '', date: '', reason: '', notes: '', created_at: '' });
     }
-
-    updatePatient(patient.id || "0",patient);
   };
 
-  const removeVisit = (index: number) => {
-    setPatient(prev => ({
-      ...prev,
-      recentVisits: prev.recent_visits?.filter((_, i) => i !== index)
-    }));
-    console.log(patient);
-    updatePatient(patient.id || "0",patient);
-  };
-
+  if (loading) return <LoadingSkeleton />;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -211,7 +211,7 @@ function PatientDetails() {
                     <input
                       type="text"
                       value={patient.name}
-                      onChange={(e) => setPatient(prev => ({ ...prev, name: e.target.value }))}
+                      onChange={(e) => setPatient((prev) => ({ ...prev, name: e.target.value }))}
                       className="w-full px-2 py-1 border rounded"
                     />
                   ) : (
@@ -228,7 +228,7 @@ function PatientDetails() {
                     <input
                       type="date"
                       value={patient.dob}
-                      onChange={(e) => setPatient(prev => ({ ...prev, dob: e.target.value }))}
+                      onChange={(e) => setPatient((prev) => ({ ...prev, dob: e.target.value }))}
                       className="flex-1 px-2 py-1 border rounded"
                     />
                   ) : (
@@ -241,7 +241,7 @@ function PatientDetails() {
                     <input
                       type="tel"
                       value={patient.phone}
-                      onChange={(e) => setPatient(prev => ({ ...prev, phone: e.target.value }))}
+                      onChange={(e) => setPatient((prev) => ({ ...prev, phone: e.target.value }))}
                       className="flex-1 px-2 py-1 border rounded"
                     />
                   ) : (
@@ -254,7 +254,7 @@ function PatientDetails() {
                     <input
                       type="email"
                       value={patient.email}
-                      onChange={(e) => setPatient(prev => ({ ...prev, email: e.target.value }))}
+                      onChange={(e) => setPatient((prev) => ({ ...prev, email: e.target.value }))}
                       className="flex-1 px-2 py-1 border rounded"
                     />
                   ) : (
@@ -266,11 +266,13 @@ function PatientDetails() {
                   {isEditing ? (
                     <select
                       value={patient.blood_type}
-                      onChange={(e) => setPatient(prev => ({ ...prev, bloodType: e.target.value }))}
+                      onChange={(e) => setPatient((prev) => ({ ...prev, blood_type: e.target.value }))}
                       className="flex-1 px-2 py-1 border rounded"
                     >
-                      {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(type => (
-                        <option key={type} value={type}>{type}</option>
+                      {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((type) => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
                       ))}
                     </select>
                   ) : (
@@ -289,7 +291,7 @@ function PatientDetails() {
                   <h3 className="text-lg font-semibold text-gray-900">Current Medications</h3>
                 </div>
               </div>
-              {isEditing && (
+              {isEditing ? (
                 <div className="flex space-x-2 mb-4">
                   <input
                     type="text"
@@ -298,31 +300,29 @@ function PatientDetails() {
                     placeholder="Add new medication"
                     className="flex-1 px-3 py-2 border rounded"
                   />
-                  <button
-                    onClick={addMedication}
-                    className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                  >
+                  <button  className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
-              )}
+              ) : null}
               <ul className="space-y-2">
-                {patient.prescriptions.map((med, index) => (
-                  <li key={index} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                      <span className="text-gray-600">{med}</span>
-                    </div>
-                    {isEditing && (
-                      <button
-                        onClick={() => removeMedication(index)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
-                  </li>
-                ))}
+                {/*patient.prescriptions && patient.prescriptions.length > 0 ? (
+                  patient.prescriptions.map((med, index) => (
+                    <li key={index} className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                        <span className="text-gray-600">{med}</span>
+                      </div>
+                      {isEditing && (
+                        <button onClick={() => removeMedication(index)} className="text-red-500 hover:text-red-700">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </li>
+                  ))
+                ) : (
+                  <p className="text-gray-500">No medications recorded.</p>
+                )*/}
               </ul>
             </div>
 
@@ -342,36 +342,46 @@ function PatientDetails() {
                     placeholder="Add new allergy"
                     className="flex-1 px-3 py-2 border rounded"
                   />
-                  <button
-                    onClick={addAllergy}
-                    className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                  >
+                  <button onClick={addAllergy} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
               )}
               <div className="flex flex-wrap gap-2">
-                {patient.allergies.map((allergy, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center space-x-1 px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm"
-                  >
-                    <span>{allergy}</span>
-                    {isEditing && (
-                      <button
-                        onClick={() => removeAllergy(index)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
+                {patient.allergies && patient.allergies.length > 0 ? (
+                  patient.allergies.map((allergy, index) => (
+                    <div key={index} className="flex items-center space-x-1 px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm">
+                      <span>{allergy.name}</span>
+                      {isEditing && (
+                        <button onClick={() => removeAllergy(index)} className="text-red-500 hover:text-red-700">
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500">No allergies recorded.</p>
+                )}
               </div>
             </div>
 
             <div className="bg-white rounded-lg shadow p-6">
-            
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <LucideBriefcase className="h-5 w-5 text-green-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">Treatment</h3>
+                </div>
+              </div>
+              {isEditing ? (
+                <textarea
+                  value={patient.treatment}
+                  onChange={(e) => setPatient((prev) => ({ ...prev, treatment: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded"
+                  rows={4}
+                />
+              ) : (
+                <p className="text-gray-600">{patient.treatment}</p>
+              )}
             </div>
 
             <div className="bg-white rounded-lg shadow p-6">
@@ -386,53 +396,38 @@ function PatientDetails() {
                   <input
                     type="date"
                     value={newVisit.date}
-                    onChange={(e) => setNewVisit(prev => ({ ...prev, date: e.target.value }))}
+                    onChange={(e) => setNewVisit((prev) => ({ ...prev, date: e.target.value }))}
                     className="px-3 py-2 border rounded"
                   />
                   <input
                     type="text"
                     value={newVisit.reason}
-                    onChange={(e) => setNewVisit(prev => ({ ...prev, reason: e.target.value }))}
+                    onChange={(e) => setNewVisit((prev) => ({ ...prev, reason: e.target.value }))}
                     placeholder="Reason for visit"
                     className="px-3 py-2 border rounded"
                   />
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      value={newVisit.doctor}
-                      onChange={(e) => setNewVisit(prev => ({ ...prev, doctor: e.target.value }))}
-                      placeholder="Doctor"
-                      className="flex-1 px-3 py-2 border rounded"
-                    />
-                    <button
-                      onClick={addVisit}
-                      className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
-                  </div>
+                  <button onClick={addVisit} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    <Plus className="h-4 w-4" />
+                  </button>
                 </div>
               )}
               <div className="space-y-4">
-                {patient.recent_visits.map((visit, index) => (
-                  <div key={index} className="border-l-4 border-green-500 pl-4 py-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2 text-sm text-gray-500">
-                        <Clock className="h-4 w-4" />
-                        <span>{visit}</span>
+                {visits.length > 0 ? (
+                  visits.map((v, index) => (
+                    <div key={index} className="border-l-4 border-green-500 pl-4 py-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2 text-sm text-gray-500">
+                          <Clock className="h-4 w-4" />
+                          <span>{v.date}</span>
+                        </div>
+                        <span className="text-sm text-gray-700">{v.reason}</span>
                       </div>
-                      {isEditing && (
-                        <button
-                          onClick={() => removeVisit(index)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      )}
+                      {v.notes && <p className="text-sm text-gray-500 mt-2">{v.notes}</p>}
                     </div>
-                    
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-gray-500">No recent visits recorded.</p>
+                )}
               </div>
             </div>
           </div>
@@ -443,6 +438,3 @@ function PatientDetails() {
 }
 
 export default PatientDetails;
-
-
-

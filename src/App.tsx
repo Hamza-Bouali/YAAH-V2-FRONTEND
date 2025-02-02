@@ -15,29 +15,12 @@ import AccountantPage from './pages/AccountantPage';
 import Login from './pages/Login';
 import PatientDetails from './pages/PatientDetails';
 import { ThemeProvider } from './context/ThemeContext';
+import test from './pages/test';
+import { isAuthorized } from './components/models/AxiosInstance';
 
-const mockPatients = [
-  {
-    id: '1',
-    name: 'John Doe',
-    age: 30,
-    gender: 'male',
-    history: ['Fever', 'Cough'],
-    prescriptions: ['Paracetamol', 'Cough syrup'],
-  },
-  {
-    id: '2',
-    name: 'Jane Smith',
-    age: 25,
-    gender: 'female',
-    history: ['Headache', 'Sore throat'],
-    prescriptions: ['Ibuprofen', 'Cough syrup'],
-  },
-];
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
-  const [patientData, setPatientData] = React.useState(mockPatients);
 
   return (
     <ThemeProvider>
@@ -47,16 +30,16 @@ function App() {
             <Route index element={<ProtectedRoute component={Dashboard} isAuthenticated={isAuthenticated} />} />
             <Route path="dashboard" element={<ProtectedRoute component={Dashboard} isAuthenticated={isAuthenticated} />} />
             <Route path="appointments" element={<ProtectedRoute component={Appointments} isAuthenticated={isAuthenticated} />} />
-            <Route path="patients" element={<ProtectedRoute component={Patients} props={{ patients: patientData }} isAuthenticated={isAuthenticated} />} />
+            <Route path="patients" element={<ProtectedRoute component={Patients}  isAuthenticated={isAuthenticated} />} />
             <Route path="telemedicine" element={<ProtectedRoute component={Telemedicine} isAuthenticated={isAuthenticated} />} />
             <Route path="prescriptions" element={<ProtectedRoute component={Prescriptions} isAuthenticated={isAuthenticated} />} />
             <Route path="billing" element={<ProtectedRoute component={Billing} isAuthenticated={isAuthenticated} />} />
             <Route path="notifications" element={<ProtectedRoute component={Notifications} isAuthenticated={isAuthenticated} />} />
             <Route path="messages" element={<ProtectedRoute component={Messages} isAuthenticated={isAuthenticated} />} />
             <Route path="settings" element={<ProtectedRoute component={Settings} isAuthenticated={isAuthenticated} />} />
-            <Route path="patient/:id" element={<ProtectedRoute component={PatientDetails} isAuthenticated={isAuthenticated} props={{ patients: patientData }} />} />
+            <Route path="patient/:id" element={<ProtectedRoute component={PatientDetails} isAuthenticated={isAuthenticated} />} />
             <Route path="accountant" element={<ProtectedRoute component={AccountantPage} isAuthenticated={isAuthenticated} />} />
-            
+            <Route path="" element={<ProtectedRoute component={test} isAuthenticated={isAuthenticated} />} />
           </Route>
           <Route path="login" element={<Login setIsAuthenticated={setIsAuthenticated} />} />
         </Routes>

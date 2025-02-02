@@ -1,7 +1,5 @@
-import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { usePatients } from '../hooks/usePatients';
-import axios from 'axios';
 
 function Dashboard() {
   // Sample data for charts
@@ -192,10 +190,10 @@ function Dashboard() {
                     <div className="font-medium text-gray-900">{patient.name}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                      {Array.isArray(patient.diseases) ? 
-                        patient.diseases.map((disease, index) => (
+                      {Array.isArray(patient.disease) ? 
+                        patient.disease.map((d, index) => (
                           <span key={index} className="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-800 mr-2">
-                            {disease.name}
+                            {d.name}
                           </span>
                         )) : 
                         <span className="text-gray-500">No diseases</span>
