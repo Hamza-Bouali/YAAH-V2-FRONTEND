@@ -1,36 +1,137 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PatientData, Visit } from '../hooks/usePatients';
-import {
-  User,
-  Calendar,
-  Phone,
-  Mail,
-  Activity,
-  Pill,
-  AlertCircle,
-  FileText,
-  Clock,
-  Edit2,
-  Save,
-  X,
-  Plus,
-  ArrowLeft,
-  LucideBriefcase,
-  Trash2,
-} from 'lucide-react';
-import { usePatients, UpdatePatient } from '../hooks/usePatients';
-import axios from 'axios';
+import { PatientData, Visit, Allergy, Prescription } from '../hooks/usePatients';
+import { usePatients, PatientService } from '../hooks/usePatients';
+import { AlertCircle, Pill, Plus, Trash2 ,User} from 'lucide-react';
+import { ArrowLeft,Edit2,Save,X,Calendar,Phone,Mail,Activity  } from 'lucide-react';
+import { LoadingSkeleton } from './LoadingSkeleton';
 
-const LoadingSkeleton = () => (
-  <div className="animate-pulse space-y-4">
-    {[...Array(5)].map((_, index) => (
-      <div key={index} className="h-12 bg-gray-200 rounded-lg"></div>
-    ))}
+
+
+interface CustomAlertProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+const CustomAlert: React.FC<CustomAlertProps> = ({ children, className }) => {
+  return (
+    <div className={`bg-red-500 text-white p-4 rounded-lg ${className}`}>
+      {children}
+    </div>
+  );
+};
+
+
+interface CustomAlertDescriptionProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+const CustomAlertDescription: React.FC<CustomAlertDescriptionProps> = ({ children, className }) => {
+  return <p className={`text-sm ${className}`}>{children}</p>;
+};
+
+const PatientInfo = ({ patient, isEditing, setPatient }) => (
+  <div className="bg-white rounded-lg shadow p-6">
+    <div className="flex items-center space-x-4 mb-6">
+      <div className="bg-blue-100 p-3 rounded-full">
+        <User className="h-6 w-6 text-blue-600" />
+      </div>
+      <div className="flex-1">
+        {isEditing ? (
+          <input
+            type="text"
+            value={patient.name}
+            onChange={(e) => setPatient((prev: PatientData) => ({ ...prev, name: e.target.value }))}
+            className="w-full px-2 py-1 border rounded"
+          />
+        ) : (
+          <h2 className="text-xl font-semibold text-gray-900">{patient.name}</h2>
+        )}
+        <p className="text-gray-500">Patient ID: {patient.id}</p>
+      </div>
+    </div>
+
+    <div className="space-y-4">
+      <div className="flex items-center space-x-3">
+        <Calendar className="h-5 w-5 text-gray-400" />
+        {isEditing ? (
+          <input
+            type="date"
+            value={patient.dob}
+            onChange={(e) => setPatient((prev: PatientData) => ({ ...prev, dob: e.target.value }))}
+            className="flex-1 px-2 py-1 border rounded"
+          />
+        ) : (
+          <span className="text-gray-600">DOB: {patient.dob} ({patient.age} years)</span>
+        )}
+      </div>
+      <div className="flex items-center space-x-3">
+        <Phone className="h-5 w-5 text-gray-400" />
+        {isEditing ? (
+          <input
+            type="tel"
+            value={patient.phone}
+            onChange={(e) => setPatient((prev: PatientData) => ({ ...prev, phone: e.target.value }))}
+            className="flex-1 px-2 py-1 border rounded"
+          />
+        ) : (
+          <span className="text-gray-600">{patient.phone}</span>
+        )}
+      </div>
+      <div className="flex items-center space-x-3">
+        <Mail className="h-5 w-5 text-gray-400" />
+        {isEditing ? (
+          <input
+            type="email"
+            value={patient.email}
+            onChange={(e) => setPatient((prev: PatientData) => ({ ...prev, email: e.target.value }))}
+            className="flex-1 px-2 py-1 border rounded"
+          />
+        ) : (
+          <span className="text-gray-600">{patient.email}</span>
+        )}
+      </div>
+      <div className="flex items-center space-x-3">
+        <Activity className="h-5 w-5 text-gray-400" />
+        {isEditing ? (
+          <select
+            value={patient.blood_type}
+            onChange={(e) => setPatient((prev: PatientData) => ({ ...prev, blood_type: e.target.value }))}
+            className="flex-1 px-2 py-1 border rounded"
+          >
+            {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span className="text-gray-600">Blood Type: {patient.blood_type}</span>
+        )}
+      </div>
+    </div>
   </div>
 );
 
-const PatientHeader = ({ patient, isEditing, setIsEditing, handleSave, handleCancel, navigate }) => (
+
+interface PatientHeaderProps {
+  isEditing: boolean;
+  setIsEditing: (editing: boolean) => void;
+  handleSave: () => Promise<void>;
+  handleCancel: () => void;
+  navigate: (path: string) => void;
+  isLoading: boolean;
+}
+
+const PatientHeader = ({ 
+  isEditing, 
+  setIsEditing, 
+  handleSave, 
+  handleCancel, 
+  navigate,
+  isLoading 
+}: PatientHeaderProps) => (
   <header className="bg-white shadow-sm">
     <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between">
@@ -48,6 +149,7 @@ const PatientHeader = ({ patient, isEditing, setIsEditing, handleSave, handleCan
           <button
             onClick={() => setIsEditing(true)}
             className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            disabled={isLoading}
           >
             <Edit2 className="h-4 w-4" />
             <span>Edit</span>
@@ -57,13 +159,15 @@ const PatientHeader = ({ patient, isEditing, setIsEditing, handleSave, handleCan
             <button
               onClick={handleSave}
               className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+              disabled={isLoading}
             >
               <Save className="h-4 w-4" />
-              <span>Save</span>
+              <span>{isLoading ? 'Saving...' : 'Save'}</span>
             </button>
             <button
               onClick={handleCancel}
               className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+              disabled={isLoading}
             >
               <X className="h-4 w-4" />
               <span>Cancel</span>
@@ -75,225 +179,198 @@ const PatientHeader = ({ patient, isEditing, setIsEditing, handleSave, handleCan
   </header>
 );
 
-const PatientInfo = ({ patient, isEditing, setPatient }) => (
-  <div className="bg-white rounded-lg shadow p-6">
-    <div className="flex items-center space-x-4 mb-6">
-      <div className="bg-blue-100 p-3 rounded-full">
-        <User className="h-6 w-6 text-blue-600" />
-      </div>
-      <div className="flex-1">
-        {isEditing ? (
-          <input
-            type="text"
-            value={patient.name}
-            onChange={(e) => setPatient((prev) => ({ ...prev, name: e.target.value }))}
-            className="w-full px-2 py-1 border rounded"
-          />
-        ) : (
-          <h2 className="text-xl font-semibold text-gray-900">{patient.name}</h2>
-        )}
-        <p className="text-gray-500">Patient ID: {patient.id}</p>
-      </div>
-    </div>
-
-    <div className="space-y-4">
-      <div className="flex items-center space-x-3">
-        <Calendar className="h-5 w-5 text-gray-400" />
-        {isEditing ? (
-          <input
-            type="date"
-            value={patient.dob}
-            onChange={(e) => setPatient((prev) => ({ ...prev, dob: e.target.value }))}
-            className="flex-1 px-2 py-1 border rounded"
-          />
-        ) : (
-          <span className="text-gray-600">DOB: {patient.dob} ({patient.age} years)</span>
-        )}
-      </div>
-      <div className="flex items-center space-x-3">
-        <Phone className="h-5 w-5 text-gray-400" />
-        {isEditing ? (
-          <input
-            type="tel"
-            value={patient.phone}
-            onChange={(e) => setPatient((prev) => ({ ...prev, phone: e.target.value }))}
-            className="flex-1 px-2 py-1 border rounded"
-          />
-        ) : (
-          <span className="text-gray-600">{patient.phone}</span>
-        )}
-      </div>
-      <div className="flex items-center space-x-3">
-        <Mail className="h-5 w-5 text-gray-400" />
-        {isEditing ? (
-          <input
-            type="email"
-            value={patient.email}
-            onChange={(e) => setPatient((prev) => ({ ...prev, email: e.target.value }))}
-            className="flex-1 px-2 py-1 border rounded"
-          />
-        ) : (
-          <span className="text-gray-600">{patient.email}</span>
-        )}
-      </div>
-      <div className="flex items-center space-x-3">
-        <Activity className="h-5 w-5 text-gray-400" />
-        {isEditing ? (
-          <select
-            value={patient.blood_type}
-            onChange={(e) => setPatient((prev) => ({ ...prev, blood_type: e.target.value }))}
-            className="flex-1 px-2 py-1 border rounded"
-          >
-            {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <span className="text-gray-600">Blood Type: {patient.blood_type}</span>
-        )}
-      </div>
-    </div>
-  </div>
-);
+interface PatientInfoProps {
+  patient: PatientData;
+  isEditing: boolean;
+  setPatient: (updater: (prev: PatientData) => PatientData) => void;
+}
 
 const PatientDetails = () => {
   const { id } = useParams<{ id: string }>();
-  const { patients, loading, error } = usePatients();
-  const patientId = id?.toString();
+  const { patients, refetchPatients } = usePatients();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
-  const [visits, setVisits] = useState<Visit[]>([]);
-  const [Loading, setLoading] = useState(true);
-  const [Error, setError] = useState<string | null>(null);
-  const [patient, setPatient] = useState<PatientData>({
-    id: '',
-    name: '',
-    dob: '',
-    age: 0,
-    phone: '',
-    email: '',
-    blood_type: '',
-    address: '',
-    disease: [],
-    visit: [],
-    appointment: [],
-    treatment: '',
-    visits: [],
-    medication: [],
-    prescriptions: [],
-    allergies: [],
-    appointments: [],
-    Allergie: [],
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [patient, setPatient] = useState<PatientData | null>(null);
+
+  const [newMedication, setNewMedication] = useState<Omit<Prescription, 'id'>>({
+    medication: '',
+    dosage: '',
+    frequency: '',
+    duration: '',
+    end_date: '',
+    start_date: '',
+    status: 'active',
   });
 
-  const [newMedication, setNewMedication] = useState('');
-  const [newAllergy, setNewAllergy] = useState('');
-  const [Treatment, setTreatment] = useState('');
-  const [newVisit, setNewVisit] = useState<Visit>({
-    id: '',
-    date: '',
-    reason: '',
-    notes: '',
-    created_at: '',
+  const [newAllergy, setNewAllergy] = useState<Omit<Allergy, 'id'>>({
+    name: '',
+    description: '',
   });
 
   useEffect(() => {
-    const fetchPatientAndVisits = async () => {
-      try {
-        setLoading(true);
-        const fetchedPatient = patients?.find((p) => p.id === patientId);
-        console.log(fetchedPatient);
-        if (fetchedPatient) {
-          setPatient(fetchedPatient);
-        }
-      } catch (err) {
-        setError('Failed to fetch patient data');
-        console.error(err);
-      } finally {
-        setLoading(false);
+    if (id && patients) {
+      const foundPatient = patients.find(p => p.id === id);
+      if (foundPatient) {
+        setPatient(foundPatient);
       }
-    };
-
-    if (patientId) {
-      fetchPatientAndVisits();
     }
-  }, [patientId, patients]);
+  }, [id, patients]);
 
-  const handleSave = () => {
+  const handleSave = useCallback(async () => {
+    if (!patient) return;
+
+    try {
+      setIsLoading(true);
+      setError(null);
+      await PatientService.updatePatient(patient.id, patient);
+      await refetchPatients();
+      setIsEditing(false);
+    } catch (err) {
+      setError('Failed to save changes');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [patient, refetchPatients]);
+
+
+  const handleCancel = useCallback(() => {
     setIsEditing(false);
-    if (id) {
-      UpdatePatient(id.toString(), patient);
+    setError(null);
+  }, []);
+
+  const handleAddPrescription = useCallback(async () => {
+    if (!patient) return;
+
+    try {
+      setIsLoading(true);
+      setError(null);
+      const createdPrescription = await PatientService.addPrescription(newMedication);
+      setPatient(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          prescriptions: [...prev.prescriptions, createdPrescription],
+          medication: [...prev.medication, createdPrescription.id]
+        };
+      });
+      setNewMedication({
+        medication: '',
+        dosage: '',
+        frequency: '',
+        duration: '',
+        end_date: '',
+        start_date: '',
+        status: 'active',
+      });
+    } catch (err) {
+      setError('Failed to add prescription');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [patient, newMedication]);
 
-  const handleCancel = () => {
-    setIsEditing(false);
-  };
+  const handleAddAllergy = useCallback(async () => {
+    if (!patient) return;
 
-  const addMedication = () => {
-    if (newMedication.trim()) {
-      setPatient((prev) => ({
-        ...prev,
-        prescriptions: [...(prev.prescriptions || []), {
-          id: Date.now().toString(),
-          medication: newMedication.trim(),
-          dosage: '',
-          frequency: '',
-          start_date: new Date().toISOString(),
-          end_date: new Date().toISOString(),
-          status: 'active',
-          duration: '',
-        }],
-      }));
-      setNewMedication('');
+    try {
+      setIsLoading(true);
+      setError(null);
+      const createdAllergy = await PatientService.addAllergy(newAllergy);
+      setPatient(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          allergies: [...prev.allergies, createdAllergy]
+        };
+      });
+      setNewAllergy({
+        name: '',
+        description: ''
+      });
+    } catch (err) {
+      setError('Failed to add allergy');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [patient, newAllergy]);
 
-  const removeMedication = (index: number) => {
-    setPatient((prev) => ({
-      ...prev,
-      prescriptions: prev.prescriptions?.filter((_, i) => i !== index),
-    }));
-  };
+  const handleDeleteAllergy = useCallback(async (allergyId: string) => {
+    if (!patient) return;
 
-  const removeAllergy = (index: number) => {
-    setPatient((prev) => ({
-      ...prev,
-      allergies: prev.allergies?.filter((_, i) => i !== index),
-    }));
-  };
-
-  const addVisit = () => {
-    if (newVisit.date && newVisit.reason) {
-      setVisits((prev) => [newVisit, ...prev]);
-      setNewVisit({ id: '', date: '', reason: '', notes: '', created_at: '' });
+    try {
+      setIsLoading(true);
+      setError(null);
+      await PatientService.deleteAllergy(allergyId);
+      setPatient(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          allergies: prev.allergies.filter(a => a.id !== allergyId)
+        };
+      });
+    } catch (err) {
+      setError('Failed to delete allergy');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [patient]);
 
-  if (Loading) return <LoadingSkeleton />;
-  if (error) return <div>Error: {error}</div>;
+  const handleDeletePrescription = useCallback(async (prescriptionId: string) => {
+    if (!patient) return;
+
+    try {
+      setIsLoading(true);
+      setError(null);
+      await PatientService.deletePrescription(prescriptionId);
+      setPatient(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          prescriptions: prev.prescriptions.filter(p => p.id !== prescriptionId),
+          medication: prev.medication.filter(id => id !== prescriptionId)
+        };
+      });
+    } catch (err) {
+      setError('Failed to delete prescription');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [patient]);
+
+  if (!patient) return <LoadingSkeleton />;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <PatientHeader
-        patient={patient}
         isEditing={isEditing}
         setIsEditing={setIsEditing}
         handleSave={handleSave}
         handleCancel={handleCancel}
         navigate={navigate}
+        isLoading={isLoading}
       />
 
+      {error && (
+        <CustomAlert className="max-w-7xl mx-auto mt-4">
+          <CustomAlertDescription>{error}</CustomAlertDescription>
+        </CustomAlert>
+      )}
+
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
             <PatientInfo patient={patient} isEditing={isEditing} setPatient={setPatient} />
           </div>
 
           <div className="lg:col-span-2 space-y-6">
-          <div className="lg:col-span-2 space-y-6">
+            {/* Medications Section */}
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-2">
@@ -301,149 +378,122 @@ const PatientDetails = () => {
                   <h3 className="text-lg font-semibold text-gray-900">Current Medications</h3>
                 </div>
               </div>
-              {isEditing ? (
-                <div className="flex space-x-2 mb-4">
+              {isEditing && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                   <input
                     type="text"
-                    value={newMedication}
-                    onChange={(e) => setNewMedication(e.target.value)}
-                    placeholder="Add new medication"
-                    className="flex-1 px-3 py-2 border rounded"
+                    value={newMedication.medication}
+                    onChange={(e) => setNewMedication(prev => ({ ...prev, medication: e.target.value }))}
+                    placeholder="Medication name"
+                    className="px-3 py-2 border rounded"
                   />
-                  <button onClick={()=>addMedication()} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                    <Plus className="h-4 w-4" />
-                  </button>
-                </div>
-              ) : null}
-              <ul className="space-y-2">
-                {patient.prescriptions && patient.prescriptions.length > 0 ? (
-                  patient.prescriptions.map((med, index) => (
-                    <li key={index} className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                        <span className="text-gray-600">{med.medication}</span>
-                      </div>
-                      {isEditing && (
-                        <button className="text-red-500 hover:text-red-700">
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      )}
-                    </li>
-                  ))
-                ) : (
-                  <p className="text-gray-500">No medications recorded.</p>
-                )}
-              </ul>
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-2">
-                  <AlertCircle className="h-5 w-5 text-red-600" />
-                  <h3 className="text-lg font-semibold text-gray-900">Allergies</h3>
-                </div>
-              </div>
-              {isEditing && (
-                <div className="flex space-x-2 mb-4">
                   <input
                     type="text"
-                    value={newAllergy}
-                    onChange={(e) => setNewAllergy(e.target.value)}
-                    placeholder="Add new allergy"
-                    className="flex-1 px-3 py-2 border rounded"
+                    value={newMedication.dosage}
+                    onChange={(e) => setNewMedication(prev => ({ ...prev, dosage: e.target.value }))}
+                    placeholder="Dosage"
+                    className="px-3 py-2 border rounded"
                   />
-                  <button className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                    <Plus className="h-4 w-4" />
-                  </button>
-                </div>
-              )}
-              <div className="flex flex-wrap gap-2">
-                {patient.allergies && patient.allergies.length > 0 ? (
-                  patient.allergies.map((allergy, index) => (
-                    <div key={index} className="flex items-center space-x-1 px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm">
-                      <span>{allergy.name}</span>
-                      {isEditing && (
-                        <button onClick={() => removeAllergy(index)} className="text-red-500 hover:text-red-700">
-                          <X className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500">No allergies recorded.</p>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-2">
-                  <LucideBriefcase className="h-5 w-5 text-green-600" />
-                  <h3 className="text-lg font-semibold text-gray-900">Treatment</h3>
-                </div>
-              </div>
-              {isEditing ? (
-                <textarea
-                  value={patient.treatment}
-                  onChange={(e) => setPatient((prev) => ({ ...prev, treatment: e.target.value }))}
-                  className="w-full px-3 py-2 border rounded"
-                  rows={4}
-                />
-              ) : (
-                <p className="text-gray-600">{patient.treatment}</p>
-              )}
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-2">
-                  <FileText className="h-5 w-5 text-green-600" />
-                  <h3 className="text-lg font-semibold text-gray-900">Recent Visits</h3>
-                </div>
-              </div>
-              {isEditing && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <input
+                  <input 
                     type="date"
-                    value={newVisit.date}
-                    onChange={(e) => setNewVisit((prev) => ({ ...prev, date: e.target.value }))}
+                    value={newMedication.start_date?.toString()}
+                    onChange={(e) => setNewMedication(prev => ({ ...prev, start_date: e.target.value }))}
+                    placeholder="Start Date"
                     className="px-3 py-2 border rounded"
                   />
-                  <input
-                    type="text"
-                    value={newVisit.reason}
-                    onChange={(e) => setNewVisit((prev) => ({ ...prev, reason: e.target.value }))}
-                    
-                    placeholder="Reason for visit"
+                  <input 
+                    type="date"
+                    value={newMedication.end_date?.toString()}
+                    onChange={(e) => setNewMedication(prev => ({ ...prev, end_date: e.target.value }))}
+                    placeholder="End Date"
                     className="px-3 py-2 border rounded"
                   />
-                  <button onClick={()=>addVisit()} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+
+                  <button
+                    onClick={handleAddPrescription}
+                    disabled={isLoading}
+                    className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
                     <Plus className="h-4 w-4" />
                   </button>
-                </div>
-              )}
-              <div className="space-y-4">
-                {patient.visits?.length > 0 ? (
-                  patient.visits.map((v, index) => (
-                    <div key={index} className="border-l-4 border-green-500 pl-4 py-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2 text-sm text-gray-500">
-                          <Clock className="h-4 w-4" />
-                          <span>{v.date}</span>
-                        </div>
-                        <span className="text-sm text-gray-700">{v.reason}</span>
-                      </div>
-                      {v.notes && <p className="text-sm text-gray-500 mt-2">{v.notes}</p>}
+
+                  </div>
+                  )}
+
+                  <div className="space-y-4">
+                  {patient.prescriptions.map((prescription) => (
+                    <div key={prescription.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <h4 className="font-medium">{prescription.medication}</h4>
+                      <p className="text-sm text-gray-600">{prescription.dosage}</p>
                     </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500">No recent visits recorded.</p>
-                )}
-              </div>
-            </div>
+                    {isEditing && (
+                      <button
+                      onClick={() => handleDeletePrescription(prescription.id)}
+                      className="text-red-600 hover:text-red-800"
+                      >
+                      <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                    </div>
+                  ))}
+                  </div>
+                </div>
+                            {/* Allergies Section */}
+                            <div className="bg-white rounded-lg shadow p-6">
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center space-x-2">
+                                  <AlertCircle className="h-5 w-5 text-yellow-600" />
+                                  <h3 className="text-lg font-semibold text-gray-900">Allergies</h3>
+                                </div>
+                              </div>
+                              {isEditing && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                  <input
+                                    type="text"
+                                    value={newAllergy.name}
+                                    onChange={(e) => setNewAllergy(prev => ({ ...prev, name: e.target.value }))}
+                                    placeholder="Allergy name"
+                                    className="px-3 py-2 border rounded"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={newAllergy.description}
+                                    onChange={(e) => setNewAllergy(prev => ({ ...prev, description: e.target.value }))}
+                                    placeholder="Description"
+                                    className="px-3 py-2 border rounded"
+                                  />
+                                  <button
+                                    onClick={handleAddAllergy}
+                                    disabled={isLoading}
+                                    className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              )}
+            
+                              <div className="space-y-4">
+                                {patient.allergies.map((allergy) => (
+                                  <div key={allergy.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <div>
+                                      <h4 className="font-medium">{allergy.name}</h4>
+                                      <p className="text-sm text-gray-600">{allergy.description}</p>
+                                    </div>
+                                    {isEditing && (
+                                      <button
+                                        onClick={() => handleDeleteAllergy(allergy.id)}
+                                        className="text-red-600 hover:text-red-800"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                     </div>
           </div>
-          </div>
-        </div>
       </main>
     </div>
   );

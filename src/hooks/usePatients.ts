@@ -5,19 +5,19 @@ import { useCallback } from 'react';
 
 // Define interfaces based on your backend API responses.
 export interface Prescription {
-        id: string,
-        medication: string,
-        dosage:string,
-        frequency: string,
-        start_date: Date | string | null,
-        end_date: Date | string | null,
-        status: "active" | "completed" | "cancelled",
-        duration: string,
-        created_at?: Date | null,
-        updated_at?: Date | null,
+  id: string;
+  medication: string;
+  dosage: string;
+  frequency: string;
+  start_date: Date | string | null;
+  end_date: Date | string | null;
+  status: "active" | "completed" | "cancelled";
+  duration: string;
+  created_at?: Date | null;
+  updated_at?: Date | null;
 }
 
-interface Disease {
+export interface Disease {
   id: string;
   name: string;
   description: string;
@@ -37,7 +37,7 @@ export interface Visit {
   created_at: string;
 }
 
-interface Appointment {
+export interface Appointment {
   id: string;
   date: string;
   time: string;
@@ -60,11 +60,9 @@ export interface PatientData {
   treatment: string;
   disease: Disease[];
   allergies: Allergy[];
-  Allergie: Allergy[];
-  visit: String[];
-  visits: Visit[] ;
-  
-  appointment: String[];
+  visit: string[];
+  visits: Visit[];
+  appointment: string[];
   appointments: Appointment[];
 }
 
@@ -73,94 +71,58 @@ export const usePatients = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchPatients = async () => {
-      try {
-        // Fetch all related data
-        const [patientsResponse,visitsResponse,medicationsResponse, appointmentsResponse /*, diseasesResponse, allergiesResponse, */] = await Promise.all([
-          axiosInstance.get('/api/patients/'), 
-          axiosInstance.get('/api/visits/'),
-          axiosInstance.get('/api/prescriptions/'),
-          axiosInstance.get('/api/appointments/')
-          /*axios.get('http://127.0.0.1:8000/api/diseases/'),
-          
-         
-          ,*/
+  const fetchPatients = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const [patientsResponse, visitsResponse, medicationsResponse, appointmentsResponse] = 
+        await Promise.all([
+          axiosInstance.get<PatientData[]>('/api/patients/'),
+          axiosInstance.get<Visit[]>('/api/visits/'),
+          axiosInstance.get<Prescription[]>('/api/prescriptions/'),
+          axiosInstance.get<Appointment[]>('/api/appointments/')
         ]);
 
-        // Extract data from responses
-        const patientsData = patientsResponse.data;
-        const visitsData = visitsResponse.data;
-        const medicationsData = medicationsResponse.data;
-        const appointmentsData = appointmentsResponse.data;
-        /*const diseasesData = diseasesResponse.data;
-        
-        
-        */
+      const patientsData = patientsResponse.data;
+      const visitsData = visitsResponse.data;
+      const medicationsData = medicationsResponse.data;
+      const appointmentsData = appointmentsResponse.data;
 
-        // Map related data to patients
-        const updatedPatients = patientsData.map((patient: PatientData) => ({
+      const updatedPatients = patientsData.map(patient => {
+        const patientVisits = patient.visit
+          .map(visitId => visitsData.find(v => v.id === visitId))
+          .filter((visit): visit is Visit => visit !== undefined);
+
+        const patientPrescriptions = patient.medication
+          .map(medicationId => medicationsData.find(m => m.id === medicationId))
+          .filter((prescription): prescription is Prescription => prescription !== undefined);
+
+        const patientAppointments = patient.appointment
+          .map(appointmentId => appointmentsData.find(a => a.id === appointmentId))
+          .filter((appointment): appointment is Appointment => appointment !== undefined);
+
+        return {
           ...patient,
-         /* disease: (patient.disease || []).map((diseaseId) =>
-            diseasesData.find((d: Disease) => d.id === diseaseId.id)
-          ).filter(Boolean),
-          allergies: (patient.allergies || []).map((allergyId) =>
-            allergiesData.find((a: Allergy) => a.id === allergyId.id)
-          ).filter(Boolean),
-          visit: (patient.visit || []).map((visitId) =>
-            visitsData.find((v: Visit) => v.id === visitId.id)
-          ).filter(Boolean),
-          appointment: (patient.appointment || []).map((appointmentId) =>
-            appointmentsData.find((a: Appointment) => a.id === appointmentId.id)
-          ).filter(Boolean),*/
-        }));
+          visits: patientVisits,
+          prescriptions: patientPrescriptions,
+          appointments: patientAppointments
+        };
+      });
 
-        patientsData.forEach((patient: PatientData) => {
-          let patientVisits: Visit[] = [];
-          let patientPrescriptions: Prescription[] = [];
-          let patientAppointments: Appointment[] = [];
-
-          patient.appointment.forEach((appointmentId) => {
-            const appointment = appointmentsData.find((a: Appointment) => a.id === appointmentId);
-            if (appointment) {
-              patientAppointments.push(appointment);
-            }
-          });
-
-
-
-          patient.visit.forEach((visitId) => {
-            const visit = visitsData.find((v: Visit) => v.id === visitId);
-            if (visit) {
-              patientVisits.push(visit);
-            }
-          });
-          patient.medication.forEach((medicationId) => {
-            const prescription = medicationsData.find((m: Prescription) => m.id === medicationId);
-            if (prescription) {
-              patientPrescriptions.push(prescription);
-            }
-          });
-
-          patient.visits = patientVisits;
-          patient.appointments = patientAppointments;
-          patient.prescriptions = patientPrescriptions;
-        });
-        setPatients(patientsData);
-        /*setPatients(updatedPatients);*/
-        
-      } catch (err) {
-        setError('Failed to fetch patient data');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPatients();
+      setPatients(updatedPatients);
+    } catch (err) {
+      setError('Failed to fetch patient data');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  return { patients, loading, error };
+  useEffect(() => {
+    fetchPatients();
+  }, [fetchPatients]);
+
+  return { patients, loading, error, refetchPatients: fetchPatients };
 };
 
 
@@ -220,4 +182,36 @@ export const usePatientDetails = (patientId: string) => {
   }, [patientId]);
 
   return { patient, loading, error, updatePatient, savePatient };
+};
+
+
+
+export const PatientService = {
+  async updatePatient(patientId: string, data: Partial<PatientData>) {
+    const response = await axiosInstance.put<PatientData>(`/api/patients/${patientId}/`, data);
+    return response.data;
+  },
+
+  async addPrescription(prescription: Omit<Prescription, 'id'>) {
+    const response = await axiosInstance.post<Prescription>('/api/prescriptions/', prescription);
+    return response.data;
+  },
+
+  async deletePrescription(prescriptionId: string) {
+    await axiosInstance.delete(`/api/prescriptions/${prescriptionId}/`);
+  },
+
+  async addAllergy(allergy: Omit<Allergy, 'id'>) {
+    const response = await axiosInstance.post<Allergy>('/api/allergies/', allergy);
+    return response.data;
+  },
+
+  async deleteAllergy(allergyId: string) {
+    await axiosInstance.delete(`/api/allergies/${allergyId}/`);
+  },
+
+  async addVisit(visit: Omit<Visit, 'id'>) {
+    const response = await axiosInstance.post<Visit>('/api/visits/', visit);
+    return response.data;
+  }
 };
