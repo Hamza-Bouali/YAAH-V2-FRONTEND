@@ -1,5 +1,8 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { usePatients } from '../hooks/usePatients';
+import { useEffect } from 'react';
+import axiosInstance from '../components/models/AxiosInstance';
+import axios from 'axios';
 
 function Dashboard() {
   // Sample data for charts

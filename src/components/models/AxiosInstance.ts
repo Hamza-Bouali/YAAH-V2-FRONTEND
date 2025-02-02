@@ -1,8 +1,8 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 // Define the base URL for your Django backend
-const BASE_URL = 'http://127.0.0.1:8000/';
-
+const BASE_URL = 'http://127.0.0.1:8080/';
+const REFRESH_INTERVAL = 14 * 60 * 1000; // 14 minutes (adjust based on token expiry time)
 // Create an Axios instance
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: BASE_URL,
@@ -96,6 +96,20 @@ axiosInstance.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export const startTokenRefresh = () => {
+  setInterval(async () => {
+    const accessToken = localStorage.getItem('access_token');
+    const refreshToken = localStorage.getItem('refresh_token');
+
+    if (accessToken && refreshToken) {
+      const newAccessToken = await refreshAccessToken();
+      if (newAccessToken) {
+        console.log('Access token refreshed');
+      }
+    }
+  }, REFRESH_INTERVAL);
+};
 
 // Function to check if the user is authorized
 export const isAuthorized = (): boolean => {

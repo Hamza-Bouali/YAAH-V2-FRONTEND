@@ -3,6 +3,8 @@ import { Plus, Search, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePatients } from '../hooks/usePatients';
 
+
+
 // Loading Skeleton Component
 const LoadingSkeleton = () => (
   <div className="animate-pulse space-y-4">
@@ -92,8 +94,23 @@ function Patients() {
                     <div className="text-gray-900">{patient.phone}</div>
                     <div className="text-gray-500 text-sm">{patient.email}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-500">{patient.last_visit}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-500">{patient.next_appointment}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-500">{patient.visits?.length > 0 
+                    ? new Date(patient.visits
+                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                        .find(visit => new Date(visit.date) <= new Date())?.date || 'No past visits')
+                        .toLocaleDateString()
+                    : 'No visits'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                    {patient.visits?.length > 0 
+                      ? (patient.visits
+                          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                          .find(visit => new Date(visit.date) >= new Date())
+                          ?.date
+                          ? new Date(patient.visits?.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                              .find(visit => new Date(visit.date) >= new Date())?.date || '').toLocaleDateString()
+                          : 'No upcoming visits')
+                      : 'No visits'}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium mr-4">
                     <button 
                       onClick={() => navigate(`/patient/${patient.id}`)}

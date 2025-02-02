@@ -19,7 +19,7 @@ import {
   LucideBriefcase,
   Trash2,
 } from 'lucide-react';
-import { usePatients } from '../hooks/usePatients';
+import { usePatients,UpdatePatient } from '../hooks/usePatients';
 import axios from 'axios';
 
 
@@ -36,13 +36,14 @@ const LoadingSkeleton = () => (
 
 function PatientDetails() {
   const { id } = useParams<{ id: string }>();
-  const { patients } = usePatients();
+  /*const { patients } = usePatients();*/
+  const { patients, loading, error } = usePatients();
   const patientId = id?.toString();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [visits, setVisits] = useState<Visit[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [Loading, setLoading] = useState(true);
+  const [Error, setError] = useState<string | null>(null);
   const [patient, setPatient] = useState<PatientData>({
     id: '',
     name: '',
@@ -56,11 +57,15 @@ function PatientDetails() {
     visit: [],
     appointment: [],
     treatment: '',
+    visits: [],
+    medication: [],
+    prescriptions: [],
     allergies: [],
   });
 
   const [newMedication, setNewMedication] = useState('');
   const [newAllergy, setNewAllergy] = useState('');
+  const [Treatment, setTreatment] = useState('');
   const [newVisit, setNewVisit] = useState<Visit>({
     id: '',
     date: '',
@@ -77,14 +82,6 @@ function PatientDetails() {
         console.log(fetchedPatient);
         if (fetchedPatient) {
           setPatient(fetchedPatient);
-          const visitIds = fetchedPatient.visit.map((v) => v);
-          if (visitIds.length > 0) {
-            visitIds.forEach(async (id) => {
-              const { data } = await axios.get<Visit>(`http://127.0.0.1:8000/api/visits/${id}`);
-              console.log(data);
-              setVisits((prev) => [data, ...prev]);
-            });
-          }
         }
       } catch (err) {
         setError('Failed to fetch patient data');
@@ -102,29 +99,47 @@ function PatientDetails() {
   const handleSave = () => {
     // Here you would typically make an API call to save the changes
     setIsEditing(false);
+    // Update the patient data in the context
+    if (id) {
+      UpdatePatient(id.toString(), patient);
+    }
   };
 
   const handleCancel = () => {
     // Reset any unsaved changes
     setIsEditing(false);
   };
-/*
+
+  const handelTreatment = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setPatient((prev) => ({ ...prev, treatment: e.target.value }));
+
+  };
+
   const addMedication = () => {
     if (newMedication.trim()) {
       setPatient((prev) => ({
         ...prev,
-        prescriptions: [...(prev.prescriptions || []), newMedication.trim()],
+        prescriptions: [...(prev.prescriptions || []), {
+          id: Date.now().toString(),
+          medication: newMedication.trim(),
+          dosage: '',
+          frequency: '',
+          start_date: new Date().toISOString(),
+          end_date: new Date().toISOString(),
+          status: 'active',
+          duration: '',
+        }],
       }));
       setNewMedication('');
     }
-  };*/
+  };
 
-  /*const removeMedication = (index: number) => {
+  const removeMedication = (index: number) => {
     setPatient((prev) => ({
       ...prev,
       prescriptions: prev.prescriptions?.filter((_, i) => i !== index),
     }));
-  };*/
+  };
 
   const addAllergy = () => {
     if (newAllergy.trim()) {
@@ -150,7 +165,7 @@ function PatientDetails() {
     }
   };
 
-  if (loading) return <LoadingSkeleton />;
+  if (Loading) return <LoadingSkeleton />;
   if (error) return <div>Error: {error}</div>;
 
   return (
@@ -300,21 +315,21 @@ function PatientDetails() {
                     placeholder="Add new medication"
                     className="flex-1 px-3 py-2 border rounded"
                   />
-                  <button  className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                  <button onClick={()=>addMedication()} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
               ) : null}
               <ul className="space-y-2">
-                {/*patient.prescriptions && patient.prescriptions.length > 0 ? (
+                {patient.prescriptions && patient.prescriptions.length > 0 ? (
                   patient.prescriptions.map((med, index) => (
                     <li key={index} className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                        <span className="text-gray-600">{med}</span>
+                        <span className="text-gray-600">{med.medication}</span>
                       </div>
                       {isEditing && (
-                        <button onClick={() => removeMedication(index)} className="text-red-500 hover:text-red-700">
+                        <button className="text-red-500 hover:text-red-700">
                           <Trash2 className="h-4 w-4" />
                         </button>
                       )}
@@ -322,7 +337,7 @@ function PatientDetails() {
                   ))
                 ) : (
                   <p className="text-gray-500">No medications recorded.</p>
-                )*/}
+                )}
               </ul>
             </div>
 
@@ -403,17 +418,18 @@ function PatientDetails() {
                     type="text"
                     value={newVisit.reason}
                     onChange={(e) => setNewVisit((prev) => ({ ...prev, reason: e.target.value }))}
+                    
                     placeholder="Reason for visit"
                     className="px-3 py-2 border rounded"
                   />
-                  <button onClick={addVisit} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                  <button onClick={()=>addVisit()} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
               )}
               <div className="space-y-4">
-                {visits.length > 0 ? (
-                  visits.map((v, index) => (
+                {patient.visits?.length > 0 ? (
+                  patient.visits.map((v, index) => (
                     <div key={index} className="border-l-4 border-green-500 pl-4 py-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2 text-sm text-gray-500">

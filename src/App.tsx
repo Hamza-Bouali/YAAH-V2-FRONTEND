@@ -16,12 +16,30 @@ import Login from './pages/Login';
 import PatientDetails from './pages/PatientDetails';
 import { ThemeProvider } from './context/ThemeContext';
 import test from './pages/test';
-import { isAuthorized } from './components/models/AxiosInstance';
-
+import axiosInstance from './components/models/AxiosInstance';
+import { useEffect } from 'react';
+import { startTokenRefresh } from './components/models/AxiosInstance';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  useEffect(() => {
+    const accessToken = localStorage.getItem('access_token');
+    const refreshToken = localStorage.getItem('refresh_token');
 
+    if (accessToken && refreshToken) {
+      // Set the access token in the Axios instance headers
+      setIsAuthenticated(true);
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+      console.log('User is authenticated');
+    } else {
+      console.log('User is not authenticated');
+      // Redirect to login page if no tokens are found
+    }
+  }, []);
+
+  useEffect(() => {
+    startTokenRefresh();
+  }, []);
   return (
     <ThemeProvider>
       <Router>
