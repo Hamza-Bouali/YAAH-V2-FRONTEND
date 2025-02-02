@@ -19,11 +19,8 @@ import {
   LucideBriefcase,
   Trash2,
 } from 'lucide-react';
-import { usePatients,UpdatePatient } from '../hooks/usePatients';
+import { usePatients, UpdatePatient } from '../hooks/usePatients';
 import axios from 'axios';
-
-
-
 
 const LoadingSkeleton = () => (
   <div className="animate-pulse space-y-4">
@@ -33,10 +30,136 @@ const LoadingSkeleton = () => (
   </div>
 );
 
+const PatientHeader = ({ patient, isEditing, setIsEditing, handleSave, handleCancel, navigate }) => (
+  <header className="bg-white shadow-sm">
+    <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => navigate('/patients')}
+            className="flex items-center text-gray-600 hover:text-gray-900"
+          >
+            <ArrowLeft className="h-5 w-5 mr-2" />
+            Back to Patients
+          </button>
+          <h1 className="text-2xl font-semibold text-gray-900">Patient Details</h1>
+        </div>
+        {!isEditing ? (
+          <button
+            onClick={() => setIsEditing(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            <Edit2 className="h-4 w-4" />
+            <span>Edit</span>
+          </button>
+        ) : (
+          <div className="flex space-x-2">
+            <button
+              onClick={handleSave}
+              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+            >
+              <Save className="h-4 w-4" />
+              <span>Save</span>
+            </button>
+            <button
+              onClick={handleCancel}
+              className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+            >
+              <X className="h-4 w-4" />
+              <span>Cancel</span>
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  </header>
+);
 
-function PatientDetails() {
+const PatientInfo = ({ patient, isEditing, setPatient }) => (
+  <div className="bg-white rounded-lg shadow p-6">
+    <div className="flex items-center space-x-4 mb-6">
+      <div className="bg-blue-100 p-3 rounded-full">
+        <User className="h-6 w-6 text-blue-600" />
+      </div>
+      <div className="flex-1">
+        {isEditing ? (
+          <input
+            type="text"
+            value={patient.name}
+            onChange={(e) => setPatient((prev) => ({ ...prev, name: e.target.value }))}
+            className="w-full px-2 py-1 border rounded"
+          />
+        ) : (
+          <h2 className="text-xl font-semibold text-gray-900">{patient.name}</h2>
+        )}
+        <p className="text-gray-500">Patient ID: {patient.id}</p>
+      </div>
+    </div>
+
+    <div className="space-y-4">
+      <div className="flex items-center space-x-3">
+        <Calendar className="h-5 w-5 text-gray-400" />
+        {isEditing ? (
+          <input
+            type="date"
+            value={patient.dob}
+            onChange={(e) => setPatient((prev) => ({ ...prev, dob: e.target.value }))}
+            className="flex-1 px-2 py-1 border rounded"
+          />
+        ) : (
+          <span className="text-gray-600">DOB: {patient.dob} ({patient.age} years)</span>
+        )}
+      </div>
+      <div className="flex items-center space-x-3">
+        <Phone className="h-5 w-5 text-gray-400" />
+        {isEditing ? (
+          <input
+            type="tel"
+            value={patient.phone}
+            onChange={(e) => setPatient((prev) => ({ ...prev, phone: e.target.value }))}
+            className="flex-1 px-2 py-1 border rounded"
+          />
+        ) : (
+          <span className="text-gray-600">{patient.phone}</span>
+        )}
+      </div>
+      <div className="flex items-center space-x-3">
+        <Mail className="h-5 w-5 text-gray-400" />
+        {isEditing ? (
+          <input
+            type="email"
+            value={patient.email}
+            onChange={(e) => setPatient((prev) => ({ ...prev, email: e.target.value }))}
+            className="flex-1 px-2 py-1 border rounded"
+          />
+        ) : (
+          <span className="text-gray-600">{patient.email}</span>
+        )}
+      </div>
+      <div className="flex items-center space-x-3">
+        <Activity className="h-5 w-5 text-gray-400" />
+        {isEditing ? (
+          <select
+            value={patient.blood_type}
+            onChange={(e) => setPatient((prev) => ({ ...prev, blood_type: e.target.value }))}
+            className="flex-1 px-2 py-1 border rounded"
+          >
+            {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span className="text-gray-600">Blood Type: {patient.blood_type}</span>
+        )}
+      </div>
+    </div>
+  </div>
+);
+
+const PatientDetails = () => {
   const { id } = useParams<{ id: string }>();
-  /*const { patients } = usePatients();*/
   const { patients, loading, error } = usePatients();
   const patientId = id?.toString();
   const navigate = useNavigate();
@@ -61,6 +184,8 @@ function PatientDetails() {
     medication: [],
     prescriptions: [],
     allergies: [],
+    appointments: [],
+    Allergie: [],
   });
 
   const [newMedication, setNewMedication] = useState('');
@@ -97,22 +222,14 @@ function PatientDetails() {
   }, [patientId, patients]);
 
   const handleSave = () => {
-    // Here you would typically make an API call to save the changes
     setIsEditing(false);
-    // Update the patient data in the context
     if (id) {
       UpdatePatient(id.toString(), patient);
     }
   };
 
   const handleCancel = () => {
-    // Reset any unsaved changes
     setIsEditing(false);
-  };
-
-  const handelTreatment = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setPatient((prev) => ({ ...prev, treatment: e.target.value }));
-
   };
 
   const addMedication = () => {
@@ -141,16 +258,6 @@ function PatientDetails() {
     }));
   };
 
-  const addAllergy = () => {
-    if (newAllergy.trim()) {
-      setPatient((prev) => ({
-        ...prev,
-        allergies: [...(prev.allergies || []), { id: Date.now().toString(), name: newAllergy.trim(), description: '' }],
-      }));
-      setNewAllergy('');
-    }
-  };
-
   const removeAllergy = (index: number) => {
     setPatient((prev) => ({
       ...prev,
@@ -170,134 +277,22 @@ function PatientDetails() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => navigate('/patients')}
-                className="flex items-center text-gray-600 hover:text-gray-900"
-              >
-                <ArrowLeft className="h-5 w-5 mr-2" />
-                Back to Patients
-              </button>
-              <h1 className="text-2xl font-semibold text-gray-900">Patient Details</h1>
-            </div>
-            {!isEditing ? (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-              >
-                <Edit2 className="h-4 w-4" />
-                <span>Edit</span>
-              </button>
-            ) : (
-              <div className="flex space-x-2">
-                <button
-                  onClick={handleSave}
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                >
-                  <Save className="h-4 w-4" />
-                  <span>Save</span>
-                </button>
-                <button
-                  onClick={handleCancel}
-                  className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                  <span>Cancel</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
+      <PatientHeader
+        patient={patient}
+        isEditing={isEditing}
+        setIsEditing={setIsEditing}
+        handleSave={handleSave}
+        handleCancel={handleCancel}
+        navigate={navigate}
+      />
 
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center space-x-4 mb-6">
-                <div className="bg-blue-100 p-3 rounded-full">
-                  <User className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={patient.name}
-                      onChange={(e) => setPatient((prev) => ({ ...prev, name: e.target.value }))}
-                      className="w-full px-2 py-1 border rounded"
-                    />
-                  ) : (
-                    <h2 className="text-xl font-semibold text-gray-900">{patient.name}</h2>
-                  )}
-                  <p className="text-gray-500">Patient ID: {patient.id}</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <Calendar className="h-5 w-5 text-gray-400" />
-                  {isEditing ? (
-                    <input
-                      type="date"
-                      value={patient.dob}
-                      onChange={(e) => setPatient((prev) => ({ ...prev, dob: e.target.value }))}
-                      className="flex-1 px-2 py-1 border rounded"
-                    />
-                  ) : (
-                    <span className="text-gray-600">DOB: {patient.dob} ({patient.age} years)</span>
-                  )}
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Phone className="h-5 w-5 text-gray-400" />
-                  {isEditing ? (
-                    <input
-                      type="tel"
-                      value={patient.phone}
-                      onChange={(e) => setPatient((prev) => ({ ...prev, phone: e.target.value }))}
-                      className="flex-1 px-2 py-1 border rounded"
-                    />
-                  ) : (
-                    <span className="text-gray-600">{patient.phone}</span>
-                  )}
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Mail className="h-5 w-5 text-gray-400" />
-                  {isEditing ? (
-                    <input
-                      type="email"
-                      value={patient.email}
-                      onChange={(e) => setPatient((prev) => ({ ...prev, email: e.target.value }))}
-                      className="flex-1 px-2 py-1 border rounded"
-                    />
-                  ) : (
-                    <span className="text-gray-600">{patient.email}</span>
-                  )}
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Activity className="h-5 w-5 text-gray-400" />
-                  {isEditing ? (
-                    <select
-                      value={patient.blood_type}
-                      onChange={(e) => setPatient((prev) => ({ ...prev, blood_type: e.target.value }))}
-                      className="flex-1 px-2 py-1 border rounded"
-                    >
-                      {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((type) => (
-                        <option key={type} value={type}>
-                          {type}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <span className="text-gray-600">Blood Type: {patient.blood_type}</span>
-                  )}
-                </div>
-              </div>
-            </div>
+            <PatientInfo patient={patient} isEditing={isEditing} setPatient={setPatient} />
           </div>
 
+          <div className="lg:col-span-2 space-y-6">
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-4">
@@ -357,7 +352,7 @@ function PatientDetails() {
                     placeholder="Add new allergy"
                     className="flex-1 px-3 py-2 border rounded"
                   />
-                  <button onClick={addAllergy} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                  <button className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
@@ -447,10 +442,11 @@ function PatientDetails() {
               </div>
             </div>
           </div>
+          </div>
         </div>
       </main>
     </div>
   );
-}
+};
 
 export default PatientDetails;

@@ -1,4 +1,5 @@
 import axios from "axios";
+import axiosInstance from "./AxiosInstance";
 
 export interface Appointment {
     id: number;
@@ -12,7 +13,7 @@ export interface Appointment {
 
 export const getAppointments = async (): Promise<Appointment[]> => {
     try {
-        const response = await axios.get('http://localhost:8000/appointments');
+        const response = await axiosInstance.get('http://localhost:8000/api/appointments');
         return response.data;
     } catch (error) {
         console.error("Error fetching appointments:", error);

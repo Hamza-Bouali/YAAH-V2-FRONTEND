@@ -101,15 +101,11 @@ function Patients() {
                         .toLocaleDateString()
                     : 'No visits'}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                    {patient.visits?.length > 0 
-                      ? (patient.visits
-                          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                          .find(visit => new Date(visit.date) >= new Date())
-                          ?.date
-                          ? new Date(patient.visits?.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                              .find(visit => new Date(visit.date) >= new Date())?.date || '').toLocaleDateString()
-                          : 'No upcoming visits')
-                      : 'No visits'}
+                    {(() => {
+                      const nextAppointment = patient.appointments.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+                      console.log(patient.appointments);
+                      return nextAppointment ? new Date(nextAppointment.date).toLocaleDateString() : 'No appointments';
+                    })()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium mr-4">
                     <button 

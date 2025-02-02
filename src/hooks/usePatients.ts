@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import axiosInstance from '../components/models/AxiosInstance';
+import { useCallback } from 'react';
 
 // Define interfaces based on your backend API responses.
-interface Prescription {
+export interface Prescription {
         id: string,
         medication: string,
         dosage:string,
@@ -22,7 +23,7 @@ interface Disease {
   description: string;
 }
 
-interface Allergy {
+export interface Allergy {
   id: string;
   name: string;
   description: string;
@@ -59,9 +60,12 @@ export interface PatientData {
   treatment: string;
   disease: Disease[];
   allergies: Allergy[];
+  Allergie: Allergy[];
   visit: String[];
   visits: Visit[] ;
-  appointment: Appointment[];
+  
+  appointment: String[];
+  appointments: Appointment[];
 }
 
 export const usePatients = () => {
@@ -73,24 +77,26 @@ export const usePatients = () => {
     const fetchPatients = async () => {
       try {
         // Fetch all related data
-        const [patientsResponse,visitsResponse,medicationsResponse /*, diseasesResponse, allergiesResponse, , appointmentsResponse*/] = await Promise.all([
+        const [patientsResponse,visitsResponse,medicationsResponse, appointmentsResponse /*, diseasesResponse, allergiesResponse, */] = await Promise.all([
           axiosInstance.get('/api/patients/'), 
           axiosInstance.get('/api/visits/'),
           axiosInstance.get('/api/prescriptions/'),
+          axiosInstance.get('/api/appointments/')
           /*axios.get('http://127.0.0.1:8000/api/diseases/'),
-          axios.get('http://127.0.0.1:8000/api/allergies/'),
+          
          
-          axios.get('http://127.0.0.1:8000/api/appointments/'),*/
+          ,*/
         ]);
 
         // Extract data from responses
         const patientsData = patientsResponse.data;
         const visitsData = visitsResponse.data;
         const medicationsData = medicationsResponse.data;
+        const appointmentsData = appointmentsResponse.data;
         /*const diseasesData = diseasesResponse.data;
-        const allergiesData = allergiesResponse.data;
         
-        const appointmentsData = appointmentsResponse.data;*/
+        
+        */
 
         // Map related data to patients
         const updatedPatients = patientsData.map((patient: PatientData) => ({
@@ -112,6 +118,17 @@ export const usePatients = () => {
         patientsData.forEach((patient: PatientData) => {
           let patientVisits: Visit[] = [];
           let patientPrescriptions: Prescription[] = [];
+          let patientAppointments: Appointment[] = [];
+
+          patient.appointment.forEach((appointmentId) => {
+            const appointment = appointmentsData.find((a: Appointment) => a.id === appointmentId);
+            if (appointment) {
+              patientAppointments.push(appointment);
+            }
+          });
+
+
+
           patient.visit.forEach((visitId) => {
             const visit = visitsData.find((v: Visit) => v.id === visitId);
             if (visit) {
@@ -124,7 +141,9 @@ export const usePatients = () => {
               patientPrescriptions.push(prescription);
             }
           });
+
           patient.visits = patientVisits;
+          patient.appointments = patientAppointments;
           patient.prescriptions = patientPrescriptions;
         });
         setPatients(patientsData);
@@ -154,4 +173,51 @@ export const UpdatePatient = async (id: string, data: PatientData) => {
     console.error('Failed to update patient:', error);
     throw error;
   }
+};
+
+
+export const usePatientDetails = (patientId: string) => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [patient, setPatient] = useState<PatientData | null>(null);
+
+  const updatePatient = useCallback((updates: Partial<PatientData>) => {
+    setPatient((prev) => prev ? { ...prev, ...updates } : null);
+  }, []);
+
+  const savePatient = useCallback(async () => {
+    if (!patient) return;
+    
+    try {
+      setLoading(true);
+      await UpdatePatient(patientId, patient);
+    } catch (err) {
+      setError('Failed to save patient data');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [patient, patientId]);
+
+  useEffect(() => {
+    const fetchPatient = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await axiosInstance.get(`/api/patients/${patientId}`);
+        setPatient(response.data);
+      } catch (err) {
+        setError('Failed to fetch patient data');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (patientId) {
+      fetchPatient();
+    }
+  }, [patientId]);
+
+  return { patient, loading, error, updatePatient, savePatient };
 };

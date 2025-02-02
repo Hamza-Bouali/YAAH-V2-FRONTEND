@@ -1,13 +1,59 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Plus, Search, Filter } from 'lucide-react';
-import { usePatients } from '../hooks/usePatients';
+import { PatientData, usePatients } from '../hooks/usePatients';
+import axiosInstance from '../components/models/AxiosInstance';
+import { Prescription } from '../hooks/usePatients';
 
 function Prescriptions() {
-  const  patients  = usePatients();
+  const [patients, setPatients] = useState<PatientData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+
+  useEffect(() => {
+    const fetchPatients = async () => {
+      try {
+        const response = await axiosInstance.get('/api/patients/');
+        const Pres_response = await axiosInstance.get('/api/prescriptions/');
+        let patientsData = response.data;
+        let prescriptionsData = Pres_response.data;
+        patientsData.forEach((patient: PatientData) => {
+                  
+                  let patientPrescriptions:Prescription[] = [];
+                  
+        
+                  patient.medication.forEach((allergyId) => {
+                    const allergy = prescriptionsData.find((a) => a.id === allergyId);
+                    if (allergy) {
+                      patientPrescriptions.push(allergy);
+                    }
+                  });
+        
+        
+                  
+        
+                  
+                  patient.prescriptions = patientPrescriptions;
+                  console.log(patient.prescriptions);
+                });
+        setPatients(response.data);
+        setLoading(false);
+        setError(null);
+      } catch (error: any) {
+        console.error('Fetch patients failed:', error);
+        setLoading(false);
+        setError('An error occurred while fetching patients. Please try again.');
+      }
+    };
+
+    fetchPatients();
+  }, []);
+  
+
   const [searchQuery, setSearchQuery] = useState('');
-/*
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;*/
+
+  
+ 
 
   return (
     <div className="p-8">
@@ -66,38 +112,35 @@ function Prescriptions() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {patients?.map((pat) => (
-              <tr key={pat.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="font-medium text-gray-900">{pat.name}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                  {pat.prescription[0]?.medication}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                  {pat.prescription[0]?.dosage}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                  {pat.prescription[0]?.frequency}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                  {pat.prescription[0]?.duration}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                    {pat.prescription[0]?.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button className="text-blue-600 hover:text-blue-900 mr-4">
-                    View
-                  </button>
-                  <button className="text-blue-600 hover:text-blue-900">
-                    Renew
-                  </button>
-                </td>
-              </tr>
-            ))}
+          {patients.map((pat) => (
+            <tr key={pat.id} className="hover:bg-gray-50">
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="font-medium text-gray-900">{pat.name}</div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                {pat.prescriptions?.[0]?.medication || 'N/A'}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                {pat.prescriptions?.[0]?.dosage || 'N/A'}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                {pat.prescriptions?.[0]?.frequency || 'N/A'}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                {pat.prescriptions?.[0]?.duration || 'N/A'}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${pat.prescriptions?.[0]?.status==='active'?'bg-green-100 text-green-800' : pat.prescriptions?.[0]?.status==='completed'?'bg-blue-100 text-blue-800':'bg-red-100 text-red-800'}`}>
+                  {pat.prescriptions?.[0]?.status || 'N/A'}
+                </span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <a href="#" className="text-indigo-600 hover:text-indigo-900">
+                  Edit
+                </a>
+              </td>
+            </tr>
+          ))}
           </tbody>
         </table>
       </div>
