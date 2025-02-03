@@ -214,6 +214,8 @@ const PatientDetails = () => {
       const foundPatient = patients.find(p => p.id === id);
       if (foundPatient) {
         setPatient(foundPatient);
+        console.log("Allergies: ",foundPatient.Allergies);
+        console.log("allergies: ",foundPatient.allergies);
       }
     }
   }, [id, patients]);
@@ -284,7 +286,8 @@ const PatientDetails = () => {
         if (!prev) return prev;
         return {
           ...prev,
-          allergies: [...prev.allergies, createdAllergy]
+          allergies: [...(prev.allergies), createdAllergy.id],
+          Allergies: [...(prev.Allergies), createdAllergy]
         };
       });
       setNewAllergy({
@@ -310,7 +313,7 @@ const PatientDetails = () => {
         if (!prev) return prev;
         return {
           ...prev,
-          allergies: prev.allergies.filter(a => a.id !== allergyId)
+          allergies: prev.allergies.filter(a => a !== allergyId)
         };
       });
     } catch (err) {
@@ -474,7 +477,7 @@ const PatientDetails = () => {
                               )}
             
                               <div className="space-y-4">
-                                {patient.allergies.map((allergy) => (
+                                {patient.Allergies?.length>0 && patient.Allergies.map((allergy) => (
                                   <div key={allergy.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                     <div>
                                       <h4 className="font-medium">{allergy.name}</h4>

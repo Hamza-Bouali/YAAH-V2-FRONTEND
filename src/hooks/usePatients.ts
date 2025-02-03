@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import axiosInstance from '../components/models/AxiosInstance';
 import { useCallback } from 'react';
 
@@ -59,7 +58,8 @@ export interface PatientData {
   address: string;
   treatment: string;
   disease: Disease[];
-  allergies: Allergy[];
+  allergies: String[];
+  Allergies: Allergy[] | [];
   visit: string[];
   visits: Visit[];
   appointment: string[];
@@ -75,18 +75,20 @@ export const usePatients = () => {
     try {
       setLoading(true);
       setError(null);
-      const [patientsResponse, visitsResponse, medicationsResponse, appointmentsResponse] = 
+      const [patientsResponse, visitsResponse, medicationsResponse, appointmentsResponse,allergiesResponse] = 
         await Promise.all([
           axiosInstance.get<PatientData[]>('/api/patients/'),
           axiosInstance.get<Visit[]>('/api/visits/'),
           axiosInstance.get<Prescription[]>('/api/prescriptions/'),
-          axiosInstance.get<Appointment[]>('/api/appointments/')
+          axiosInstance.get<Appointment[]>('/api/appointments/'),
+          axiosInstance.get<Allergy[]>('/api/allergies/')
         ]);
 
       const patientsData = patientsResponse.data;
       const visitsData = visitsResponse.data;
       const medicationsData = medicationsResponse.data;
       const appointmentsData = appointmentsResponse.data;
+      const allergiesData = allergiesResponse.data;
 
       const updatedPatients = patientsData.map(patient => {
         const patientVisits = patient.visit
@@ -101,11 +103,14 @@ export const usePatients = () => {
           .map(appointmentId => appointmentsData.find(a => a.id === appointmentId))
           .filter((appointment): appointment is Appointment => appointment !== undefined);
 
+        const patientAllergies = patient.allergies.map(allergyId => allergiesData.find(a => a.id === allergyId)).filter((allergy): allergy is Allergy => allergy !== undefined);
+
         return {
           ...patient,
           visits: patientVisits,
           prescriptions: patientPrescriptions,
-          appointments: patientAppointments
+          appointments: patientAppointments,
+          Allergies: patientAllergies
         };
       });
 
@@ -121,7 +126,6 @@ export const usePatients = () => {
   useEffect(() => {
     fetchPatients();
   }, [fetchPatients]);
-
   return { patients, loading, error, refetchPatients: fetchPatients };
 };
 
