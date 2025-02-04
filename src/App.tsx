@@ -19,6 +19,7 @@ import test from './pages/test';
 import axiosInstance from './components/models/AxiosInstance';
 import { useEffect } from 'react';
 import { startTokenRefresh } from './components/models/AxiosInstance';
+import { Navigate } from 'react-router-dom';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
@@ -58,9 +59,9 @@ function App() {
             <Route path="settings" element={<ProtectedRoute component={Settings} isAuthenticated={isAuthenticated} />} />
             <Route path="patient/:id" element={<ProtectedRoute component={PatientDetails} isAuthenticated={isAuthenticated} />} />
             <Route path="accountant" element={<ProtectedRoute component={AccountantPage} isAuthenticated={isAuthenticated} />} />
-            <Route path="" element={<ProtectedRoute component={test} isAuthenticated={isAuthenticated} />} />
           </Route>
-          <Route path="login" element={<Login setIsAuthenticated={setIsAuthenticated} />} />
+          <Route path= "login" element={<Login setIsAuthenticated={setIsAuthenticated} />} />
+          <Route path= "*" element={<Navigate to='/login' />} />
         </Routes>
       </Router>
     </ThemeProvider>
