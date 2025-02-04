@@ -6,7 +6,7 @@ export interface Appointment {
   date: string
   time: string
   status: string
-  place: "In-person" | "Virtual"
+  place: "in-person" | "virtual"
   notes: string
 }
 

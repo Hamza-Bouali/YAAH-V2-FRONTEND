@@ -100,7 +100,7 @@ const convertTo12Hour = (time24h: string): string => {
         pat: selectedClient,
         date: selectedDateTime.date,
         time: time24,
-        place: "In-person"
+        place: newAppointment.place
       })
 
       setAppointments([...appointments, addedAppointment])
@@ -207,9 +207,9 @@ const convertTo12Hour = (time24h: string): string => {
                       {appointment ? (
                         <div
                           className={`absolute inset-1 ${
-                            appointment.place.toLowerCase() === "Virtual" 
-                              ? "bg-blue-200 text-blue-700" 
-                              : "bg-green-200 text-green-700"
+                            appointment.place.toLowerCase() === "virtual" 
+                              ?  "bg-blue-200 text-blue-700"  
+                              : "bg-green-200 text-green-700" 
                           } rounded p-2 text-sm cursor-pointer hover:bg-opacity-80`}
                           onClick={(e) => {
                             e.stopPropagation()
@@ -223,6 +223,7 @@ const convertTo12Hour = (time24h: string): string => {
                             {appointment.place.charAt(0).toUpperCase() + 
                             appointment.place.slice(1)}
                           </div>
+                          <div className="text-xs">{(appointment.status)}</div>
                         </div>
                       ) : (
                         <div className="h-full w-full hover:bg-gray-50"></div>

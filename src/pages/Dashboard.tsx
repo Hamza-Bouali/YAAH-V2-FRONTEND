@@ -18,23 +18,33 @@ function Dashboard() {
   // Sample data for charts
 
   const navigate = useNavigate();
-  const [data,SetData]=useState(
-    {
+  const [data,SetData]=useState({
       patients_count: 0,
       today_appointments: 0,
       diseases: [],
       medications: [],
       treatments: [],
       today_app: [],
-    }
-  );
+      last_week_visits_by_day: [] as {
+        date: string,
+        count: number
+      }[],
+      revenue_per_month: [] as {
+        month: string,
+        total_revenue: number,
+      }[],
+      patients_by_age: [] as {
+        age_category: string,
+        count: number,
+      }[],
+  });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const d = await axiosInstance.get('/api/statistics/');
         SetData(d.data);
-        console.log(d.data);
+        console.log(d.data.patients_by_age);
       } catch (error) {
         console.error('Error fetching patient data:', error);
       }
@@ -44,31 +54,11 @@ function Dashboard() {
   
 
   const today_appointments=data.today_app;
-  const appointmentData = [
-    { day: 'Mon', appointments: 12 },
-    { day: 'Tue', appointments: 15 },
-    { day: 'Wed', appointments: 10 },
-    { day: 'Thu', appointments: 18 },
-    { day: 'Fri', appointments: 14 },
-    { day: 'Sat', appointments: 8 },
-    { day: 'Sun', appointments: 5 },
-  ];
+  const appointmentData = data.last_week_visits_by_day.map((d, index) => ({ day: d.date, appointments: d.count }));
 
-  const revenueData = [
-    { month: 'Jan', revenue: 4000 },
-    { month: 'Feb', revenue: 3000 },
-    { month: 'Mar', revenue: 5000 },
-    { month: 'Apr', revenue: 4500 },
-    { month: 'May', revenue: 6000 },
-    { month: 'Jun', revenue: 5500 },
-  ];
+  const revenueData = data.revenue_per_month.map((d, index) => ({ month: d.month, revenue: d.total_revenue }));
 
-  const patientAgeData = [
-    { name: '0-18', value: 15 },
-    { name: '19-35', value: 40 },
-    { name: '36-50', value: 30 },
-    { name: '51+', value: 15 },
-  ];
+  const patientAgeData = data.patients_by_age.map((d) => ({ name: d.age_category, value: d.count }));
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
