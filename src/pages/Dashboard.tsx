@@ -1,23 +1,40 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { usePatients } from '../hooks/usePatients';
+import { Appointment, usePatients } from '../hooks/usePatients';
 import { useEffect, useState } from 'react';
 import axiosInstance from '../components/models/AxiosInstance';
 import axios from 'axios';
 import { LoadingSkeleton } from './LoadingSkeleton';
+import { useNavigate } from 'react-router-dom';
 import { daysInWeek } from 'date-fns/constants';
+import { format,parse } from 'date-fns';
+
+
+
+
 
 
 
 function Dashboard() {
   // Sample data for charts
 
-  const [data,SetData]=useState();
+  const navigate = useNavigate();
+  const [data,SetData]=useState(
+    {
+      patients_count: 0,
+      today_appointments: 0,
+      diseases: [],
+      medications: [],
+      treatments: [],
+      today_app: [],
+    }
+  );
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const d = await axiosInstance.get('/api/statistics/');
         SetData(d.data);
+        console.log(d.data);
       } catch (error) {
         console.error('Error fetching patient data:', error);
       }
@@ -26,7 +43,7 @@ function Dashboard() {
   }, []);
   
 
-
+  const today_appointments=data.today_app;
   const appointmentData = [
     { day: 'Mon', appointments: 12 },
     { day: 'Tue', appointments: 15 },
@@ -56,12 +73,13 @@ function Dashboard() {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
   // Sample patient data for diseases, medications, and treatments
-  let { patients, loading, error } = usePatients();
-  patients=patients.slice(0, 10);
+  const { patients, loading, error } = usePatients();
+  const Tpatients=patients.slice(0, 10);
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await axiosInstance.get('/api/statistics/');
+        console.log(patients);
         console.log(response.data);
       } catch (error) {
         console.error('Error fetching patient data:', error);
@@ -83,21 +101,21 @@ function Dashboard() {
         <div className="bg-white p-6 rounded-xl shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Today's Schedule</h3>
           <div className="space-y-4">
-            {[
-              { time: '09:00 AM', patient: 'John Doe', type: 'Check-up' },
-              { time: '10:30 AM', patient: 'Jane Smith', type: 'Follow-up' },
-              { time: '02:00 PM', patient: 'Mike Johnson', type: 'Consultation' },
-            ].map((appt, index) => (
+            {today_appointments.slice(0,3).map((appt : Appointment, index) => (
               <div key={index} className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-800">{appt.time}</p>
-                  <p className="text-sm text-gray-600">{appt.patient}</p>
+                  <p className="font-medium text-gray-800">{format(parse(appt.time, 'HH:mm:ss', new Date()), 'HH:mm')}</p>
+                  <p className="text-sm text-gray-600">{patients?.length>0 && patients.find((p) => p.id.toString() === appt.pat.toString())?.name}</p>
                 </div>
                 <span className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded-full">
-                  {appt.type}
+                  {appt.status}
                 </span>
               </div>
             ))}
+            
+            {today_appointments.length>3  && <div className="flex cursor-pointer items-center justify-center border-t-[2px] border-gray-200 p-0 m-0 w-full text-gray-700 text-xl" onClick={()=>navigate('/appointments')} >
+                .....
+              </div>}
           </div>
         </div>
 
@@ -235,7 +253,7 @@ function Dashboard() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {patients?.map((patient) => (
+              {Tpatients?.map((patient) => (
                 <tr key={patient.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="font-medium text-gray-900">{patient.name}</div>
