@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 // Define the base URL for your Django backend
-const BASE_URL = localStorage.getItem("DJANGO_URL") || 'http://localhost:8000';
+const BASE_URL = localStorage.getItem("DJANGO_URL") || 'https://yaah-v2-backend.onrender.com';
 const REFRESH_INTERVAL = 14 * 60 * 1000; // 14 minutes (adjust based on token expiry time)
 // Create an Axios instance
 const axiosInstance: AxiosInstance = axios.create({
