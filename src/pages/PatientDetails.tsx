@@ -1,11 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PatientData, Visit, Allergy, Prescription } from '../hooks/usePatients';
+import { PatientData, Visit, Allergy, Prescription,Appointment,Disease } from '../hooks/usePatients';
 import { usePatients, PatientService } from '../hooks/usePatients';
 import { AlertCircle, Pill, Plus, Trash2 ,User} from 'lucide-react';
 import { ArrowLeft,Edit2,Save,X,Calendar,Phone,Mail,Activity  } from 'lucide-react';
 import { LoadingSkeleton } from './LoadingSkeleton';
-
+import {format,parse} from 'date-fns';
 
 
 interface CustomAlertProps {
@@ -274,7 +274,170 @@ const PatientDetails = () => {
       setIsLoading(false);
     }
   }, [patient, newMedication]);
-
+  const [newDisease, setNewDisease] = useState<Omit<Disease, 'id'>>({
+    name: '',
+    description: ''
+  });
+  
+  const [newVisit, setNewVisit] = useState<Omit<Visit, 'id' | 'created_at'>>({
+    date: '',
+    reason: '',
+    notes: '',
+    hour:''
+  });
+  
+  const [newAppointment, setNewAppointment] = useState<Omit<Appointment, 'id'>>({
+    date: '',
+    time: '',
+    doctor: '',
+    status: 'scheduled',
+    notes: '',
+    pat: patient?.id || '',
+  });
+  
+  // Add handler methods
+  const handleAddDisease = useCallback(async () => {
+    if (!patient) return;
+    try {
+      setIsLoading(true);
+      const createdDisease = await PatientService.addDisease(newDisease);
+      setPatient(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          diseases: [...prev.diseases, createdDisease],
+          disease: [...prev.disease, createdDisease.id]
+        };
+      });
+      setNewDisease({ name: '', description: '' });
+    } catch (err) {
+      setError('Failed to add disease');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [patient, newDisease]);
+  
+  const handleDeleteDisease = useCallback(async (diseaseId: string) => {
+    if (!patient) return;
+    try {
+      setIsLoading(true);
+      await PatientService.deleteDisease(diseaseId);
+      setPatient(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          diseases: prev.diseases.filter(d => d.id !== diseaseId),
+          disease: prev.disease.filter(id => id !== diseaseId)
+        };
+      });
+    } catch (err) {
+      setError('Failed to delete disease');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [patient]);
+  
+  const handleAddVisit = useCallback(async () => {
+    if (!patient) return;
+    try {
+      setIsLoading(true);
+      const createdVisit = await PatientService.addVisit(newVisit);
+      setPatient(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          visits: [...prev.visits, createdVisit],
+          visit: [...prev.visit, createdVisit.id]
+        };
+      });
+      setNewVisit({ date: '', reason: '', notes: '' ,hour:''});
+    } catch (err) {
+      setError('Failed to add visit');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [patient, newVisit]);
+  
+  const handleDeleteVisit = useCallback(async (visitId: string) => {
+    if (!patient) return;
+    try {
+      setIsLoading(true);
+      await PatientService.deleteVisit(visitId);
+      setPatient(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          visits: prev.visits.filter(v => v.id !== visitId),
+          visit: prev.visit.filter(id => id !== visitId)
+        };
+      });
+    } catch (err) {
+      setError('Failed to delete visit');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [patient]);
+  
+  const handleAddAppointment = useCallback(async () => {
+    if (!patient) return;
+    try {
+      setIsLoading(true);
+      const createdAppointment = await PatientService.addAppointment({
+        ...newAppointment,
+        pat: patient.id, // Make sure to include the patient ID
+        date: newAppointment.date,
+        time: format(parse(newAppointment.time, 'HH:mm', new Date()), 'HH:mm:ss'),
+        status: "scheduled",
+        notes: newAppointment.notes || ""
+      });
+      setPatient(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          appointments: [...prev.appointments, createdAppointment],
+          appointment: [...prev.appointment, createdAppointment.id]
+        };
+      });
+      setNewAppointment({
+        date: '',
+        time: '',
+        doctor: '',
+        status: 'scheduled',
+        notes: '',
+        pat: patient.id || '',
+      });
+    } catch (err) {
+      setError('Failed to add appointment');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [patient, newAppointment]);
+  
+  const handleDeleteAppointment = useCallback(async (appointmentId: string) => {
+    if (!patient) return;
+    try {
+      setIsLoading(true);
+      await PatientService.deleteAppointment(appointmentId);
+      setPatient(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          appointments: prev.appointments.filter(a => a.id !== appointmentId),
+          appointment: prev.appointment.filter(id => id !== appointmentId)
+        };
+      });
+    } catch (err) {
+      setError('Failed to delete appointment');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [patient]);
   const handleAddAllergy = useCallback(async () => {
     if (!patient) return;
 
@@ -442,8 +605,8 @@ const PatientDetails = () => {
                   ))}
                   </div>
                 </div>
-                            {/* Allergies Section */}
-                            <div className="bg-white rounded-lg shadow p-6">
+                {/* Allergies Section */}
+                  <div className="bg-white rounded-lg shadow p-6">
                               <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center space-x-2">
                                   <AlertCircle className="h-5 w-5 text-yellow-600" />
@@ -494,8 +657,215 @@ const PatientDetails = () => {
                                   </div>
                                 ))}
                               </div>
+                        </div>
+                        {/* Diseases Section */}
+                        <div className="bg-white rounded-lg shadow p-6 mt-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-2">
+                              <Activity className="h-5 w-5 text-green-600" />
+                              <h3 className="text-lg font-semibold text-gray-900">Existing Diseases</h3>
                             </div>
+                          </div>
+                          {isEditing && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                              <input
+                                type="text"
+                                value={newDisease.name}
+                                onChange={(e) => setNewDisease(prev => ({ ...prev, name: e.target.value }))}
+                                placeholder="Disease name"
+                                className="px-3 py-2 border rounded"
+                              />
+                              <input
+                                type="text"
+                                value={newDisease.description}
+                                onChange={(e) => setNewDisease(prev => ({ ...prev, description: e.target.value }))}
+                                placeholder="Description"
+                                className="px-3 py-2 border rounded"
+                              />
+                              <button
+                                onClick={handleAddDisease}
+                                disabled={isLoading}
+                                className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </button>
+                            </div>
+                          )}
+                          <div className="space-y-4">
+                            {patient.diseases.length > 0 ? (
+                              patient.diseases.map((disease) => (
+                                <div key={disease.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                  <div>
+                                    <h4 className="font-medium">{disease.name}</h4>
+                                    <p className="text-sm text-gray-600">{disease.description}</p>
+                                  </div>
+                                  {isEditing && (
+                                    <button
+                                      onClick={() => handleDeleteDisease(disease.id)}
+                                      className="text-red-600 hover:text-red-800"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-gray-500">No diseases recorded</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Similar modifications for Visits and Appointments sections */}
+                        {/* Visits Section */}
+                        <div className="bg-white rounded-lg shadow p-6 mt-6 grid md:grid-cols-2 gap-6">
+                          <div>
+                            <div className="flex items-center space-x-2 mb-4">
+                              <Calendar className="h-5 w-5 text-purple-600" />
+                              <h3 className="text-lg font-semibold text-gray-900">Visits</h3>
+                            </div>
+                            {isEditing && (
+                              <div className="grid grid-cols-1 gap-4 mb-4">
+                                <input
+                                  type="date"
+                                  value={newVisit.date}
+                                  onChange={(e) => setNewVisit(prev => ({ ...prev, date: e.target.value }))}
+                                  className="px-3 py-2 border rounded"
+                                />
+                                <input
+                                  type="text"
+                                  value={newVisit.reason}
+                                  onChange={(e) => setNewVisit(prev => ({ ...prev, reason: e.target.value }))}
+                                  placeholder="Visit Reason"
+                                  className="px-3 py-2 border rounded"
+                                />
+                                <input
+                                  type="time"
+                                  value={newVisit.hour}
+                                  onChange={(e) => setNewVisit(prev => ({ ...prev, hour: e.target.value }))}
+                                  placeholder="the time"
+                                  className="px-3 py-2 border rounded"  
+                                />
+                                <input
+                                  type="text"
+                                  value={newVisit.notes}
+                                  onChange={(e) => setNewVisit(prev => ({ ...prev, notes: e.target.value }))}
+                                  placeholder="Notes (Optional)"
+                                  className="px-3 py-2 border rounded"
+                                />
+                                <button
+                                  onClick={handleAddVisit}
+                                  disabled={isLoading}
+                                  className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </button>
+                              </div>
+                            )}
+                            <div className="space-y-4">
+                              {patient.visits.map((visit) => (
+                                <div key={visit.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                  <div>
+                                    <div className="flex justify-between">
+                                      <span className="font-medium">{visit.date}</span>
+                                    </div>
+                                    <p className="text-sm text-gray-600">{visit.reason}</p>
+                                    {visit.notes && (
+                                      <p className="text-xs text-gray-500 mt-1">{visit.notes}</p>
+                                    )}
+                                  </div>
+                                  {isEditing && (
+                                    <button
+                                      onClick={() => handleDeleteVisit(visit.id)}
+                                      className="text-red-600 hover:text-red-800"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Appointments Section */}
+                          <div>
+                            <div className="flex items-center space-x-2 mb-4">
+                              <Calendar className="h-5 w-5 text-blue-600" />
+                              <h3 className="text-lg font-semibold text-gray-900">Appointments</h3>
+                            </div>
+                            {isEditing && (
+                              <div className="grid grid-cols-1 gap-4 mb-4">
+                                <input
+                                  type="date"
+                                  value={newAppointment.date}
+                                  onChange={(e) => setNewAppointment(prev => ({ ...prev, date: e.target.value }))}
+                                  className="px-3 py-2 border rounded"
+                                />
+                                <input
+                                  type="time"
+                                  value={newAppointment.time}
+                                  onChange={(e) => setNewAppointment(prev => ({ ...prev, time: e.target.value }))}
+                                  className="px-3 py-2 border rounded"
+                                />
+                                <select
+                                  value={newAppointment.status}
+                                  onChange={(e) => setNewAppointment(prev => ({ ...prev, status: e.target.value }))}
+                                  className="px-3 py-2 border rounded"
+                                >
+                                  <option value="scheduled">Scheduled</option>
+                                  <option value="completed">Completed</option>
+                                  <option value="cancelled">Cancelled</option>
+                                </select>
+                                <input
+                                  type="text"
+                                  value={newAppointment.notes}
+                                  onChange={(e) => setNewAppointment(prev => ({ ...prev, notes: e.target.value }))}
+                                  placeholder="Notes (Optional)"
+                                  className="px-3 py-2 border rounded"
+                                />
+                                <button
+                                  onClick={handleAddAppointment}
+                                  disabled={isLoading}
+                                  className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </button>
+                              </div>
+                            )}
+                            <div className="space-y-4">
+                              {patient.appointments.map((appointment) => (
+                                <div key={appointment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                  <div>
+                                    <div className="flex justify-between">
+                                      <span className="font-medium">{appointment.date} at {appointment.time}</span>
+                                      <span className={`text-xs px-2 py-1 rounded ${
+                                        appointment.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                        appointment.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                        'bg-yellow-100 text-yellow-800'
+                                      }`}>
+                                        {appointment.status}
+                                      </span>
+                                    </div>
+                                    {appointment.notes && (
+                                      <p className="text-xs text-gray-500 mt-1">{appointment.notes}</p>
+                                    )}
+                                  </div>
+                                  {isEditing && (
+                                    <button
+                                      onClick={() => handleDeleteAppointment(appointment.id)}
+                                      className="text-red-600 hover:text-red-800"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>    
+
+                            
                      </div>
+                     
           </div>
       </main>
     </div>

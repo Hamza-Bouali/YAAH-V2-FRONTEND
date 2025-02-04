@@ -1,18 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react';
-import { format, parse } from 'date-fns';
-import { Appointment } from './models/Appointements';
-
-
+import React, { useState, useEffect } from "react"
+import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from "@headlessui/react"
+import { format, parse } from "date-fns"
+import type { Appointment } from "./models/Appointements"
 
 interface AppointmentModalProps {
-  open: boolean;
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  addAppointment: (newAppointment: Appointment) => void;
-  selectedClient: string;
-  setSelectedClient: React.Dispatch<React.SetStateAction<string>>;
-  openClientModal: () => void;
-  selectedDateTime: { date: string; time: string } | null;
+  appointment?: Appointment
+  open: boolean
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>
+  addAppointment: (newAppointment: Appointment) => void
+  selectedClient: string
+  setSelectedClient: React.Dispatch<React.SetStateAction<string>>
+  openClientModal: () => void
+  selectedDateTime: { date: string; time: string } | null
 }
 
 const AppointmentModal: React.FC<AppointmentModalProps> = ({
@@ -20,83 +19,79 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({
   setOpen,
   addAppointment,
   selectedClient,
-  setSelectedClient,
   openClientModal,
   selectedDateTime,
 }) => {
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
-  const [type, setType] = useState('');
-  const [place, setPlace] = useState('');
+  const [date, setDate] = useState<string>("")
+  const [time, setTime] = useState<string>("")
+  const [place, setPlace] = useState<"In-person" | "Virtual">("In-person")
 
-  const times = [
-    '9:00 AM', '10:00 AM', '11:00 AM',
-    '12:00 PM', '1:00 PM', '2:00 PM', 
-    '3:00 PM', '4:00 PM', '5:00 PM'
-  ];
+  const timeSlots = [
+    "09:00 AM",
+    "10:00 AM",
+    "11:00 AM",
+    "12:00 PM",
+    "01:00 PM",
+    "02:00 PM",
+    "03:00 PM",
+    "04:00 PM",
+    "05:00 PM"
+  ]
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedClient || !date || !time || !type) {
-      alert('Please fill in all fields');
-      return;
+    e.preventDefault()
+    if (!selectedClient || !date || !time || !place) {
+      alert("Please fill in all fields")
+      return
     }
-
-    try {
-      const parsedTime = parse(time, 'hh:mm a', new Date());
-      const formattedTime = format(parsedTime, 'hh:mm a');
-
-      addAppointment({
-        id: Math.floor(Math.random() * 1000),
-        patientID: parseInt(selectedClient) || 0,
-        patient: selectedClient,
-        date,
-        time: formattedTime,
-        type,
-        place,
-      });
-
-      setDate('');
-      setSelectedClient('');
-      setTime('');
-      setType('');
-      setOpen(false);
-    } catch (error) {
-      console.error('Error formatting time:', error);
-      alert('Invalid time format');
+  
+    // Convert 12-hour format time to 24-hour format
+    const formattedTime = format(
+      parse(time, 'hh:mm a', new Date()),
+      'HH:mm:ss'
+    )
+  
+    const newAppointment: Omit<Appointment, "id"> = {
+      pat: selectedClient,
+      date,
+      time: formattedTime,
+      status: "scheduled",
+      notes: "",
+      place: place as "In-person" | "Virtual", // Convert to lowercase
     }
-  };
+  
+    addAppointment(newAppointment)
+    setOpen(false)
+  }
 
-  const modalRef = React.useRef<HTMLDivElement>(null);
+  const modalRef = React.useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        setTime('');
-        setDate('');
+        setTime("")
+        setDate("")
       }
-    };
+    }
 
     if (open) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside)
     }
 
     if (selectedDateTime) {
-      setDate(selectedDateTime.date);
-      setTime(selectedDateTime.time);
+      setDate(selectedDateTime.date)
+      setTime(selectedDateTime.time)
     }
+    
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [open, setOpen, selectedDateTime]);
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [open, selectedDateTime])
 
   return (
     <Dialog open={open} ref={modalRef} onClose={() => setOpen(false)} className="relative z-20">
-      <DialogBackdrop
-        transition
-        className="fixed inset-0 bg-gray-500/75 transition-opacity"
-      />
+      <DialogBackdrop transition className="fixed inset-0 bg-gray-500/75 transition-opacity" />
 
       <div className="fixed inset-0 z-20 w-screen overflow-y-auto">
         <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
@@ -131,7 +126,7 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({
                   <label className="block text-sm font-medium text-gray-700">Date</label>
                   <input
                     type="date"
-                    value={date}
+                    value={date?.toString()}
                     onChange={(e) => setDate(e.target.value)}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   />
@@ -140,32 +135,17 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Time</label>
                   <select
-                    value={time}
-                    onChange={(e) => setTime(e.target.value)}
-                    className="mt-1 block w-full rounded-md bg-white border-2 h-6 shadow-sm focus:border-blue-200 focus:ring-blue-500"
-                  >
-                    <option value="">Select time</option>
-                    {times.map((time) => (
-                      <option key={time} value={time}>
-                        {time}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Type</label>
-                  <select
-                    value={type}
-                    onChange={(e) => setType(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-2 bg-white border-gray-300 shadow-sm focus:border-blue-200 focus:ring-blue-500"
-                  >
-                    <option value="">Select type</option>
-                    <option value="Check-up">Check-up</option>
-                    <option value="Follow-up">Follow-up</option>
-                    <option value="Consultation">Consultation</option>
-                    <option value="Emergency">Emergency</option>
-                  </select>
+                      value={time}
+                      onChange={(e) => setTime(e.target.value)}
+                      className="mt-1 block w-full rounded-md bg-white border-2 h-6 shadow-sm focus:border-blue-200 focus:ring-blue-500"
+                    >
+                  <option value="">Select time</option>
+                  {timeSlots.map((timeSlot) => (
+                    <option key={timeSlot} value={timeSlot}>
+                      {timeSlot}
+                    </option>
+                  ))}
+                </select>
                 </div>
 
                 <div>
@@ -173,27 +153,27 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({
                   <div className="mt-1 flex space-x-4">
                     <div className="flex items-center">
                       <input
-                        id="in-person"
+                        id="In-person"
                         name="appointment-mode"
                         type="radio"
-                        onClick={() => setPlace('In-person')}
-                        value="In-person"
+                        checked={place === "In-person"}
+                        onChange={() => setPlace("In-person")}
                         className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                       />
-                      <label htmlFor="in-person" className="ml-2 block text-sm text-gray-700">
+                      <label htmlFor="In-person" className="ml-2 block text-sm text-gray-700">
                         In-person
                       </label>
                     </div>
                     <div className="flex items-center">
                       <input
-                        id="virtual"
+                        id="Virtual"
                         name="appointment-mode"
                         type="radio"
-                        onClick={() => setPlace('Virtual')}
-                        value="Virtual"
+                        checked={place === "Virtual"}
+                        onChange={() => setPlace("Virtual")}
                         className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                       />
-                      <label htmlFor="virtual" className="ml-2 block text-sm text-gray-700">
+                      <label htmlFor="Virtual" className="ml-2 block text-sm text-gray-700">
                         Virtual
                       </label>
                     </div>
@@ -203,7 +183,6 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({
                 <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
                   <button
                     type="submit"
-                    onClick={handleSubmit}
                     className="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:col-start-2"
                   >
                     Add Appointment
@@ -222,7 +201,7 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({
         </div>
       </div>
     </Dialog>
-  );
-};
+  )
+}
 
 export default AppointmentModal;

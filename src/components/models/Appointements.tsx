@@ -1,49 +1,76 @@
-import axios from "axios";
-import axiosInstance from "./AxiosInstance";
+import axiosInstance from "./AxiosInstance"
 
 export interface Appointment {
-    id: number;
-    patientID: number;
-    date: string;
-    patient: string | null;
-    time: string;
-    type: string;
-    place: string;
+  id?: string
+  pat: string
+  date: string
+  time: string
+  status: string
+  place: "In-person" | "Virtual"
+  notes: string
 }
 
 export const getAppointments = async (): Promise<Appointment[]> => {
-    try {
-        const response = await axiosInstance.get('http://localhost:8000/api/appointments');
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching appointments:", error);
-        throw error;
-    }
-};
+  try {
+    const response = await axiosInstance.get("/api/appointments/")
+    return response.data
+  } catch (error) {
+    console.error("Error fetching appointments:", error)
+    throw error
+  }
+}
 
-export const addAppointment = async (appointment: Appointment): Promise<void> => {
-    try {
-        await axios.post('http://localhost:8000/appointments', appointment);
-    } catch (error) {
-        console.error("Error adding appointment:", error);
-        throw error;
-    }
-};
+const getPatientUUID = async (patientName: string): Promise<string> => {
+  try {
+    const response = await axiosInstance.get(`/api/patients/`)
+    const patient = response.data.find((patient: { name: string }) => patient.name === patientName)
 
-export const deleteAppointment = async (appointmentID: number): Promise<void> => {
-    try {
-        await axios.delete(`http://localhost:8000/appointments/${appointmentID}`);
-    } catch (error) {
-        console.error("Error deleting appointment:", error);
-        throw error;
+    if (!patient) {
+      throw new Error(`Patient not found: ${patientName}`)
     }
-}; 
+    return patient.id
+  } catch (error) {
+    console.error("Error fetching patient UUID:", error)
+    throw error
+  }
+}
 
-export const updateAppointment = async (appointment: Appointment): Promise<void> => {
-    try {
-        await axios.put(`http://localhost:8000/appointments/${appointment.id}`, appointment);
-    } catch (error) {
-        console.error("Error updating appointment:", error);
-        throw error;
+export const addAppointment = async (appointment: Omit<Appointment, "id">): Promise<Appointment> => {
+  try {
+    // Convert the patient name to a UUID if necessary
+    const patientUUID = await getPatientUUID(appointment.pat)
+
+    const appointmentData = {
+      ...appointment,
+      pat: patientUUID,
+      date: appointment.date,
+      time: appointment.time,
+      place: appointment.place, // Keep the original case
     }
-};
+
+    const response = await axiosInstance.post("/api/appointments/", appointmentData)
+    return response.data
+  } catch (error) {
+    console.error("Error adding appointment:", error)
+    throw error
+  }
+}
+
+export const updateAppointment = async (appointment: Appointment): Promise<Appointment> => {
+  try {
+    const response = await axiosInstance.put(`/api/appointments/${appointment.id}`, appointment)
+    return response.data
+  } catch (error) {
+    console.error("Error updating appointment:", error)
+    throw error
+  }
+}
+
+export const deleteAppointment = async (id: string): Promise<void> => {
+  try {
+    await axiosInstance.delete(`/api/appointments/${id}`)
+  } catch (error) {
+    console.error("Error deleting appointment:", error)
+    throw error
+  }
+}

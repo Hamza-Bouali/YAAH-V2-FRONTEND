@@ -34,6 +34,7 @@ export interface Visit {
   reason: string;
   notes: string;
   created_at: string;
+  hour: string;
 }
 
 export interface Appointment {
@@ -43,6 +44,7 @@ export interface Appointment {
   doctor: string;
   status: string;
   notes: string;
+  pat: string;
 }
 
 export interface PatientData {
@@ -57,7 +59,8 @@ export interface PatientData {
   blood_type: string;
   address: string;
   treatment: string;
-  disease: Disease[];
+  diseases: Disease[];
+  disease: string[];
   allergies: String[];
   Allergies: Allergy[] | [];
   visit: string[];
@@ -75,13 +78,14 @@ export const usePatients = () => {
     try {
       setLoading(true);
       setError(null);
-      const [patientsResponse, visitsResponse, medicationsResponse, appointmentsResponse,allergiesResponse] = 
+      const [patientsResponse, visitsResponse, medicationsResponse, appointmentsResponse,allergiesResponse,diseaseResponse] = 
         await Promise.all([
           axiosInstance.get<PatientData[]>('/api/patients/'),
           axiosInstance.get<Visit[]>('/api/visits/'),
           axiosInstance.get<Prescription[]>('/api/prescriptions/'),
           axiosInstance.get<Appointment[]>('/api/appointments/'),
-          axiosInstance.get<Allergy[]>('/api/allergies/')
+          axiosInstance.get<Allergy[]>('/api/allergies/'),
+          axiosInstance.get<Disease[]>('/api/diseases/'),
         ]);
 
       const patientsData = patientsResponse.data;
@@ -89,6 +93,7 @@ export const usePatients = () => {
       const medicationsData = medicationsResponse.data;
       const appointmentsData = appointmentsResponse.data;
       const allergiesData = allergiesResponse.data;
+      const diseasesData = diseaseResponse.data;
 
       const updatedPatients = patientsData.map(patient => {
         const patientVisits = patient.visit
@@ -105,12 +110,14 @@ export const usePatients = () => {
 
         const patientAllergies = patient.allergies.map(allergyId => allergiesData.find(a => a.id === allergyId)).filter((allergy): allergy is Allergy => allergy !== undefined);
 
+        const patientDiseases = patient.disease.map(diseaseId => diseasesData.find(d => d.id === diseaseId)).filter((disease): disease is Disease => disease !== undefined);
         return {
           ...patient,
           visits: patientVisits,
           prescriptions: patientPrescriptions,
           appointments: patientAppointments,
-          Allergies: patientAllergies
+          Allergies: patientAllergies,
+          diseases: patientDiseases,
         };
       });
 
@@ -214,8 +221,31 @@ export const PatientService = {
     await axiosInstance.delete(`/api/allergies/${allergyId}/`);
   },
 
-  async addVisit(visit: Omit<Visit, 'id'>) {
+  async addVisit(visit: Omit<Visit, 'id' | 'created_at'>) {
     const response = await axiosInstance.post<Visit>('/api/visits/', visit);
     return response.data;
-  }
+  },
+
+  async deleteVisit(visitId: string) {
+    const response=await axiosInstance.delete(`/api/visits/${visitId}/`);
+    return response.data;
+  },
+
+  async addDisease(disease: Omit<Disease, 'id'>) {
+    const response = await axiosInstance.post<Disease>('/api/diseases/', disease);
+    return response.data;
+  },
+
+  async deleteDisease(diseaseId: string) {
+    await axiosInstance.delete(`/api/diseases/${diseaseId}/`);
+  },
+
+  async addAppointment(appointment: Omit<Appointment, 'id'>) {
+    const response = await axiosInstance.post<Appointment>('/api/appointments/', appointment);
+    return response.data;
+  },
+
+  async deleteAppointment(appointmentId: string) {
+    await axiosInstance.delete(`/api/appointments/${appointmentId}/`);
+  },
 };

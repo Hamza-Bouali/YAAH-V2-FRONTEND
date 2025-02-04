@@ -1,10 +1,11 @@
 import React from 'react';
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react';
+import { PatientData } from '../hooks/usePatients';
 
 interface ClientModalProps {
   open: boolean;
   setOpen: (arg0: boolean) => void;
-  clients: { id: number; name: string }[];
+  clients: PatientData[];
   onSelectClient: (clientName: string) => void;
 }
 

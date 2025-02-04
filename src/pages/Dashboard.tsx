@@ -35,7 +35,19 @@ function Dashboard() {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
   // Sample patient data for diseases, medications, and treatments
-  const { patients, loading, error } = usePatients();
+  let { patients, loading, error } = usePatients();
+  patients=patients.slice(0, 10);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axiosInstance.get('/api/statistics/');
+        console.log(response.data);
+      } catch (error) {
+        console.error('Error fetching patient data:', error);
+      }
+    };
+  }, []);
+
 
   return (
     <div className="p-8">
@@ -194,7 +206,7 @@ function Dashboard() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-500">
                       {Array.isArray(patient.disease) ? 
-                        patient.disease.map((d, index) => (
+                        patient.diseases.map((d, index) => (
                           <span key={index} className="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-800 mr-2">
                             {d.name}
                           </span>
@@ -203,11 +215,16 @@ function Dashboard() {
                       }
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                    {}
+                    {patient.prescriptions.map((prescription, index) => (
+                      <span key={index} className="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-semibold text-gray-800 mr-2">
+                        {prescription.medication}
+                      </span>
+                    )  )}
                   </td>
                   
                   <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                    {patient.treatment}
+                    {patient.treatment?.slice(0, 20)}
+                    {patient.treatment && patient.treatment.length > 20 && <span>.....</span>}
                   </td>
                 </tr>
               ))}
