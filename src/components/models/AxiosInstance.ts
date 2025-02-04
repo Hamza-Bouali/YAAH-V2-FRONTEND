@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 // Define the base URL for your Django backend
-const BASE_URL =/*'https://yaah-v2-backend.onrender.com'*/"http://127.0.0.1:8000";
+const BASE_URL ='https://yaah-v2-backend.onrender.com';
 const REFRESH_INTERVAL = 14 * 60 * 1000; // 14 minutes (adjust based on token expiry time)
 // Create an Axios instance
 const axiosInstance: AxiosInstance = axios.create({
@@ -30,7 +30,7 @@ const refreshAccessToken = async (): Promise<string | null> => {
       throw new Error('No refresh token available');
     }
 
-    const response = await axios.post(`${BASE_URL}/token/refresh/`, { refresh: refreshToken });
+    const response = await axios.post(`${BASE_URL}/api/token/refresh/`, { refresh: refreshToken });
     const { access } = response.data;
     localStorage.setItem('access_token', access); // Store the new access token
     return access;

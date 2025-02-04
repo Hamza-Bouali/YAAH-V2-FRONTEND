@@ -9,9 +9,7 @@ import {
   deleteAppointment,
 } from "../components/models/Appointements"
 import { usePatients } from "../hooks/usePatients"
-
 import { format, addDays, startOfWeek, parse } from "date-fns"
-import { getPatient } from "../components/models/Patients"
 
 
 
@@ -116,6 +114,8 @@ const convertTo12Hour = (time24h: string): string => {
   const handleDeleteAppointment = async (appointmentId?: string) => {
     if (!appointmentId) return
 
+    if (!confirm("Are you sure you want to delete this appointment?")) return;
+
     try {
       await deleteAppointment(appointmentId)
       setAppointments(appointments.filter((apt) => apt.id !== appointmentId))
@@ -213,7 +213,7 @@ const convertTo12Hour = (time24h: string): string => {
                           } rounded p-2 text-sm cursor-pointer hover:bg-opacity-80`}
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleDeleteAppointment(appointment.status)
+                            handleDeleteAppointment(appointment.id)
                           }}
                         >
                           <div className="font-medium">{

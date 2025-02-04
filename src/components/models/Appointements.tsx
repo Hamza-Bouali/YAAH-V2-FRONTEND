@@ -68,7 +68,7 @@ export const updateAppointment = async (appointment: Appointment): Promise<Appoi
 
 export const deleteAppointment = async (id: string): Promise<void> => {
   try {
-    await axiosInstance.delete(`/api/appointments/${id}`)
+    await axiosInstance.delete(`/api/appointments/${id}/`)
   } catch (error) {
     console.error("Error deleting appointment:", error)
     throw error

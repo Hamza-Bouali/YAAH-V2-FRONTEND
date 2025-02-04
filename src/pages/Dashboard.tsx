@@ -1,11 +1,32 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { usePatients } from '../hooks/usePatients';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import axiosInstance from '../components/models/AxiosInstance';
 import axios from 'axios';
+import { LoadingSkeleton } from './LoadingSkeleton';
+import { daysInWeek } from 'date-fns/constants';
+
+
 
 function Dashboard() {
   // Sample data for charts
+
+  const [data,SetData]=useState();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const d = await axiosInstance.get('/api/statistics/');
+        SetData(d.data);
+      } catch (error) {
+        console.error('Error fetching patient data:', error);
+      }
+    };
+    fetchData();
+  }, []);
+  
+
+
   const appointmentData = [
     { day: 'Mon', appointments: 12 },
     { day: 'Tue', appointments: 15 },
@@ -46,6 +67,7 @@ function Dashboard() {
         console.error('Error fetching patient data:', error);
       }
     };
+    fetchData();
   }, []);
 
 
@@ -80,23 +102,37 @@ function Dashboard() {
         </div>
 
         {/* Patient Stats */}
-        <div className="bg-white p-6 rounded-xl shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Patient Statistics</h3>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Total Patients</span>
-              <span className="font-semibold text-gray-800">1,234</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">New This Week</span>
-              <span className="font-semibold text-gray-800">28</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Appointments Today</span>
-              <span className="font-semibold text-gray-800">12</span>
+        {loading ? (
+          <div className="bg-white p-6 rounded-xl shadow-sm animate-pulse">
+            <div className="h-6 w-48 bg-gray-200 rounded mb-4"></div>
+            <div className="space-y-4">
+              {[1, 2, 3].map((item) => (
+          <div key={item} className="flex justify-between items-center">
+            <div className="h-4 w-24 bg-gray-200 rounded"></div>
+            <div className="h-4 w-16 bg-gray-200 rounded"></div>
+          </div>
+              ))}
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-white p-6 rounded-xl shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Patient Statistics</h3>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+          <span className="text-gray-600">Total Patients</span>
+          <span className="font-semibold text-gray-800">{data.patients_count}</span>
+              </div>
+              <div className="flex justify-between items-center">
+          <span className="text-gray-600">New This Week</span>
+          <span className="font-semibold text-gray-800">28</span>
+              </div>
+              <div className="flex justify-between items-center">
+          <span className="text-gray-600">Appointments Today</span>
+          <span className="font-semibold text-gray-800">{data.today_appointments}</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Recent Activity */}
         <div className="bg-white p-6 rounded-xl shadow-sm">
