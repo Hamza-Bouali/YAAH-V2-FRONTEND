@@ -15,6 +15,12 @@ function Login({ setIsAuthenticated }: LoginProps) {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  React.useEffect(() => {
+    alert('Welcome to the login page! Please enter your credentials.');
+    alert('the app is running but you may have some issues with the authentication , token refresh and data fetching because the backend is slow for the moment and we are on our way to improve it soon, Credentials for login are: username:admin password:admin');
+
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault(); // Prevent form submission default behavior
     

@@ -23,6 +23,7 @@ import { startTokenRefresh } from './components/models/AxiosInstance';
 function App() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
   useEffect(() => {
+    
     const accessToken = localStorage.getItem('access_token');
     const refreshToken = localStorage.getItem('refresh_token');
 
