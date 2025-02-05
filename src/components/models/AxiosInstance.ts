@@ -15,7 +15,7 @@ const axiosInstance: AxiosInstance = axios.create({
 
 // Function to get the access token from localStorage
 export const getAccessToken = (): string | null => {
-  return import.meta.env.VITE_ACCESS_TOKEN as string;
+  return import.meta.env.VITE_ACCESS_TOKEN as string || localStorage.getItem('access_token');
 };
 
 // Function to get the refresh token from localStorage
