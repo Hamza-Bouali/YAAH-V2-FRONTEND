@@ -29,6 +29,7 @@ function Appointments() {
       try {
         const data = await getAppointments()
         setAppointments(data)
+        console.log("Appointments fetched successfully", data)
       } catch (error) {
         console.error("Failed to fetch appointments", error)
       }
@@ -217,7 +218,7 @@ const convertTo12Hour = (time24h: string): string => {
                           }}
                         >
                           <div className="font-medium">{
-                            patients.find((patient) => patient.id === appointment.pat)?.name
+                            patients.find((patient) => patient.id === appointment.pat)?.name.split(" ").at(-1)
                             }</div>
                           <div className="text-xs">
                             {appointment.place.charAt(0).toUpperCase() + 

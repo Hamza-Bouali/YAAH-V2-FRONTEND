@@ -6,6 +6,8 @@ import { AlertCircle, Pill, Plus, Trash2 ,User} from 'lucide-react';
 import { ArrowLeft,Edit2,Save,X,Calendar,Phone,Mail,Activity  } from 'lucide-react';
 import { LoadingSkeleton } from './LoadingSkeleton';
 import {format,parse} from 'date-fns';
+import { Navigate } from 'react-router-dom';
+import axiosInstance from '../components/models/AxiosInstance';
 
 
 interface CustomAlertProps {
@@ -179,18 +181,13 @@ const PatientHeader = ({
   </header>
 );
 
-interface PatientInfoProps {
-  patient: PatientData;
-  isEditing: boolean;
-  setPatient: (updater: (prev: PatientData) => PatientData) => void;
-}
 
 const PatientDetails = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id,editing } = useParams<{ id?: string,editing?:string }>();
   const { patients, refetchPatients } = usePatients();
   const navigate = useNavigate();
-  const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(editing==='new'?true : false); ;
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [patient, setPatient] = useState<PatientData | null>(null);
 
@@ -209,14 +206,49 @@ const PatientDetails = () => {
     description: '',
   });
 
-  useEffect(() => {
-    if (id && patients) {
-      const foundPatient = patients.find(p => p.id === id);
+  const get_new_patient_id=async()=>{
+    const PatientId=await axiosInstance.get('/api/user_id/'); 
+    return PatientId.data;
+  }
+  
+  useEffect( () => {
+    const foundPatient = patients.find(p => p.id === id);
+    if (id && patients && id !== 'new') {
+      
       if (foundPatient) {
+        setIsLoading(false);
         setPatient(foundPatient);
         console.log("Allergies: ",foundPatient.Allergies);
         console.log("allergies: ",foundPatient.allergies);
       }
+    }
+    else if(id === 'new')
+    {
+        get_new_patient_id().then(PatientId => {
+          setIsEditing(true);
+          setIsLoading(false);
+          setPatient({
+            id: PatientId.UUID,
+            name: '',
+            dob: '',
+            phone: '',
+            email: '',
+            blood_type: '',
+            age: 0,
+            visits: [],
+            allergies: [],
+            diseases: [],
+            prescriptions: [],
+            appointments: [],
+            visit: [],
+            disease: [],
+            medication: [],
+            appointment: [],
+            address: '',
+            treatment: '',
+            Allergies: []
+          } as PatientData);
+        });
     }
   }, [id, patients]);
 
@@ -510,12 +542,14 @@ const PatientDetails = () => {
     }
   }, [patient]);
 
-  if (!patient) return <LoadingSkeleton />;
+
+
+  if (isLoading) return <LoadingSkeleton />;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <PatientHeader
-        isEditing={isEditing}
+        isEditing={isEditing.toString()==='true' ? true : false}
         setIsEditing={setIsEditing}
         handleSave={handleSave}
         handleCancel={handleCancel}
@@ -587,7 +621,7 @@ const PatientDetails = () => {
                   )}
 
                   <div className="space-y-4">
-                  {patient.prescriptions.map((prescription) => (
+                  {patient && patient.prescriptions.map((prescription) => (
                     <div key={prescription.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <h4 className="font-medium">{prescription.medication}</h4>
@@ -640,7 +674,7 @@ const PatientDetails = () => {
                               )}
             
                               <div className="space-y-4">
-                                {patient.Allergies?.length>0 && patient.Allergies.map((allergy) => (
+                                {patient &&  patient.Allergies?.length>0 && patient.Allergies.map((allergy) => (
                                   <div key={allergy.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                     <div>
                                       <h4 className="font-medium">{allergy.name}</h4>
@@ -692,7 +726,7 @@ const PatientDetails = () => {
                             </div>
                           )}
                           <div className="space-y-4">
-                            {patient.diseases.length > 0 ? (
+                            {patient && patient.diseases.length > 0 ? (
                               patient.diseases.map((disease) => (
                                 <div key={disease.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                   <div>
@@ -832,7 +866,7 @@ const PatientDetails = () => {
                               </div>
                             )}
                             <div className="space-y-4">
-                              {patient.appointments.map((appointment) => (
+                              {patient?.appointments.map((appointment) => (
                                 <div key={appointment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                   <div>
                                     <div className="flex justify-between">
@@ -859,6 +893,9 @@ const PatientDetails = () => {
                                   )}
                                 </div>
                               ))}
+                              {patient?.appointments.length === 0 && (
+                                <p className="text-gray-500">No appointments recorded</p>
+                              )}
                             </div>
                           </div>
                         </div>    

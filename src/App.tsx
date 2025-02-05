@@ -18,17 +18,17 @@ import { ThemeProvider } from './context/ThemeContext';
 import test from './pages/test';
 import axiosInstance from './components/models/AxiosInstance';
 import { useEffect } from 'react';
-import { startTokenRefresh } from './components/models/AxiosInstance';
 import { Navigate } from 'react-router-dom';
+import SignupPage from './pages/Register';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const [RegisterOrLogin, setRegisterOrLogin] = React.useState(false);
   useEffect(() => {
     
     const accessToken = localStorage.getItem('access_token');
-    const refreshToken = localStorage.getItem('refresh_token');
 
-    if (accessToken && refreshToken) {
+    if (accessToken ) {
       // Set the access token in the Axios instance headers
       setIsAuthenticated(true);
       axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
@@ -39,9 +39,7 @@ function App() {
     }
   }, []);
 
-  useEffect(() => {
-    startTokenRefresh();
-  }, []);
+  
   return (
     <ThemeProvider>
       <Router>
@@ -59,9 +57,10 @@ function App() {
             <Route path="settings" element={<ProtectedRoute component={Settings} isAuthenticated={isAuthenticated} />} />
             <Route path="patient/:id" element={<ProtectedRoute component={PatientDetails} isAuthenticated={isAuthenticated} />} />
             <Route path="accountant" element={<ProtectedRoute component={AccountantPage} isAuthenticated={isAuthenticated} />} />
-          </Route>
-          <Route path= "login" element={<Login setIsAuthenticated={setIsAuthenticated} />} />
-          <Route path= "*" element={<Navigate to='/login' />} />
+            </Route>
+          <Route path= "login" element={<Login setIsAuthenticated={setIsAuthenticated} />}  />
+          <Route path= "register" element={<SignupPage  />} />
+          <Route path= "*" element={<Navigate to={isAuthenticated ?`/dashboard` : '/login'} />} />
         </Routes>
       </Router>
     </ThemeProvider>

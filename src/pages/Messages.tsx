@@ -1,25 +1,39 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Send, Phone, Video, MoreVertical } from 'lucide-react';
 import { PatientData } from '../hooks/usePatients';
-
+import axiosInstance from '../components/models/AxiosInstance';
 
 // Types
 
 interface Message {
   id: string;
   content: string;
-  timestamp: string;
   sender: 'user' | 'other';
+  text:string;
+  created_at:string;
+}
+
+interface DoctorData {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  first_name: string;
+  last_name: string;
+  dob: string;
+  username: string;
+
 }
 
 interface Conversation {
   id: number;
-  Patient: PatientData | null;
-  lastMessage: string;
+  patient: PatientData | null;
+  doctor: DoctorData | null;
   time: string;
   unread: number;
   status: 'online' | 'offline' | 'away';
-  messages: Message[];
+  messages: String[];
+  Messages: Message[];
 }
 
 // Helper Components
@@ -71,7 +85,7 @@ const Messages = () => {
         lastVisit: '2024-02-15',
         dob: '1994-05-20',
         bloodType: 'O+',
-        diseases: ['Hypertension'],
+        diseases: [{ id: '1', name: 'Hypertension',description: 'High blood pressure'}],
         nextAppointment: '2024-03-15',
         address: '123 Main St, Anytown, USA',
         medications: ['Medication A', 'Medication B'],

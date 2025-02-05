@@ -17,10 +17,47 @@ const ClientInfo: React.FC<ClientInfoProps> = ({ client }) => {
   // Dummy data for demonstration purposes
   const info = client;
   return (
-    <div className="bg-white p-4 rounded-lg shadow-md">
-      <h2 className="text-xl font-bold mb-2">{info.name}</h2>
-      <p>Age: {info.age}</p>
-      <p>Condition: {info.diseases}</p>
+    <div>
+    <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
+      <div className="flex items-center justify-between border-b pb-4"></div>
+        <h2 className="text-2xl font-bold text-gray-800">{info.name}</h2>
+        <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+          Patient
+        </span>
+      </div>
+      
+      <div className="grid gap-4">
+        <div className="flex items-center bg-gray-50 p-3 rounded-md">
+          <span className="w-24 font-medium text-gray-700">Age:</span>
+          <span className="text-gray-800">{info.age} years</span>
+        </div>
+        
+        <div className="flex items-start bg-gray-50 p-3 rounded-md">
+          <span className="w-24 font-medium text-gray-700">Condition:</span>
+          <div className="flex flex-wrap gap-2">
+            {info.diseases.map((disease, index) => (
+              <span key={index} className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-sm">
+                {disease.name}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center bg-gray-50 p-3 rounded-md">
+          <span className="w-24 font-medium text-gray-700">Phone:</span>
+          <a href={`tel:${info.phone}`} className="text-blue-600 hover:underline">{info.phone}</a>
+        </div>
+
+        <div className="flex items-center bg-gray-50 p-3 rounded-md">
+          <span className="w-24 font-medium text-gray-700">Email:</span>
+          <a href={`mailto:${info.email}`} className="text-blue-600 hover:underline">{info.email}</a>
+        </div>
+
+        <div className="flex items-start bg-gray-50 p-3 rounded-md">
+          <span className="w-24 font-medium text-gray-700">Address:</span>
+          <span className="text-gray-800">{info.address}</span>
+        </div>
+      </div>
     </div>
   );
 };
@@ -32,7 +69,7 @@ function Telemedicine() {
   const [isVideoOff, setIsVideoOff] = React.useState(false);
   const [isCallActive, setIsCallActive] = React.useState(false);
   const [selectedClient, setSelectedClient] = React.useState<PatientData | null>(null);
-  const  patients  = usePatients();
+  const  patients  = usePatients().patients;
 
  
 
@@ -72,9 +109,9 @@ function Telemedicine() {
           id="client-select"
           
           className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-          value={selectedClient?.id || ""}
+          value={selectedClient?.id || "None selected"}
           onChange={(e) => {
-            const client = patients?.find(client => client.id === e.target.value) || null;
+            const client = patients.find((client:PatientData) => client.id === e.target.value) || null;
             setSelectedClient(client);
           }}
         >
@@ -83,7 +120,7 @@ function Telemedicine() {
               {client.name}
             </option>
           ))}
-          {/* Add more clients as needed */}
+          
         </select>
       </div>
 

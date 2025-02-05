@@ -14,6 +14,7 @@ const LoadingSkeleton = () => (
   </div>
 );
 
+
 function Patients() {
   const  {patients ,loading, error } = usePatients();
   const navigate = useNavigate();
@@ -30,6 +31,9 @@ function Patients() {
   // Display error state
   //if (error) return <div className="p-8 text-red-500">{error}</div>;
 
+  const handleNewPatient = () => {
+    navigate('/patient/new');
+  };
 
   return (
     <div className="p-8">
@@ -37,7 +41,7 @@ function Patients() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Patients</h1>
         <button 
-          onClick={() => navigate('/patient/new')}
+          onClick={handleNewPatient}
           className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
           <Plus className="w-4 h-4 mr-2" />

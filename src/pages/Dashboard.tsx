@@ -17,6 +17,30 @@ import { format,parse } from 'date-fns';
 function Dashboard() {
   // Sample data for charts
 
+
+  const Months_dict: { [key: number]: string } = {
+    1:"January",
+    2:"February",
+    3:"March",
+    4:"April",
+    5:"May",
+    6:"June",
+    7:"July",
+    8:"August",
+    9:"September",
+    10:"October",
+    11:"November",
+    12:"December"
+  }
+
+  const get_day = (date: string) => {
+    const d = parse(date, 'yyyy-MM-dd', new Date());
+    return format(d, 'EEEE');
+  };
+  const get_month=(date:string)=>{
+    const d=parse(date, 'yyyy-MM-dd', new Date());
+    return Months_dict[d.getMonth()+1];
+  }
   const navigate = useNavigate();
   const [data,SetData]=useState({
       patients_count: 0,
@@ -44,7 +68,7 @@ function Dashboard() {
       try {
         const d = await axiosInstance.get('/api/statistics/');
         SetData(d.data);
-        console.log(d.data.patients_by_age);
+        console.log("this week appointmetns: ",d.data.last_week_visits_by_day);
       } catch (error) {
         console.error('Error fetching patient data:', error);
       }
@@ -54,9 +78,9 @@ function Dashboard() {
   
 
   const today_appointments=data.today_app;
-  const appointmentData = data.last_week_visits_by_day.map((d, index) => ({ day: d.date, appointments: d.count }));
+  const appointmentData = data.last_week_visits_by_day.map((d, index) => ({ day: get_day(d.date), appointments: d.count }));
 
-  const revenueData = data.revenue_per_month.map((d, index) => ({ month: d.month, revenue: d.total_revenue }));
+  const revenueData = data.revenue_per_month.map((d, index) => ({ month: get_month(d.month).slice(0,3), revenue: d.total_revenue }));
 
   const patientAgeData = data.patients_by_age.map((d) => ({ name: d.age_category, value: d.count }));
 
@@ -70,6 +94,7 @@ function Dashboard() {
       try {
         const response = await axiosInstance.get('/api/statistics/');
         console.log(patients);
+        console.log("appointments",appointmentData);
         console.log(response.data);
       } catch (error) {
         console.error('Error fetching patient data:', error);
@@ -91,7 +116,7 @@ function Dashboard() {
         <div className="bg-white p-6 rounded-xl shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Today's Schedule</h3>
           <div className="space-y-4">
-            {today_appointments.slice(0,3).map((appt : Appointment, index) => (
+            {today_appointments.length>0 ? today_appointments.slice(0,3).map((appt : Appointment, index) => (
               <div key={index} className="flex items-center justify-between">
                 <div>
                   <p className="font-medium text-gray-800">{format(parse(appt.time, 'HH:mm:ss', new Date()), 'HH:mm')}</p>
@@ -101,7 +126,7 @@ function Dashboard() {
                   {appt.status}
                 </span>
               </div>
-            ))}
+            )): <div className="flex items-center justify-center text-gray-600 text-xl">No appointments today</div>}
             
             {today_appointments.length>3  && <div className="flex cursor-pointer items-center justify-center border-t-[2px] border-gray-200 p-0 m-0 w-full text-gray-700 text-xl" onClick={()=>navigate('/appointments')} >
                 .....
@@ -205,11 +230,11 @@ function Dashboard() {
               data={patientAgeData}
               cx="50%"
               cy="50%"
-              labelLine={false}
+              labelLine={true}
               outerRadius={200}
               fill="#8884d8"
               dataKey="value"
-              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
             >
               {patientAgeData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

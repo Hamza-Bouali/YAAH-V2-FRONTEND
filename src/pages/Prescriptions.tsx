@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Search, Filter } from 'lucide-react';
-import { PatientData, usePatients } from '../hooks/usePatients';
+import { Allergy, PatientData, usePatients } from '../hooks/usePatients';
 import axiosInstance from '../components/models/AxiosInstance';
 import { Prescription } from '../hooks/usePatients';
+import { useNavigate } from 'react-router-dom';
 
 function Prescriptions() {
   const [patients, setPatients] = useState<PatientData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const  navigate  = useNavigate();
 
 
   useEffect(() => {
@@ -23,7 +25,7 @@ function Prescriptions() {
                   
         
                   patient.medication.forEach((allergyId) => {
-                    const allergy = prescriptionsData.find((a) => a.id === allergyId);
+                    const allergy = prescriptionsData.find((a:Allergy) => a.id === allergyId);
                     if (allergy) {
                       patientPrescriptions.push(allergy);
                     }
@@ -59,7 +61,7 @@ function Prescriptions() {
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Prescriptions</h1>
-        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={() => navigate('/patient/new')}>
           <Plus className="w-4 h-4 mr-2" />
           New Prescription
         </button>
@@ -135,7 +137,7 @@ function Prescriptions() {
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <a href="#" className="text-indigo-600 hover:text-indigo-900">
+                <a  className="text-indigo-600 hover:text-indigo-900 cursor-pointer " onClick={() =>navigate('/patient/'+pat.id)}>
                   Edit
                 </a>
               </td>
