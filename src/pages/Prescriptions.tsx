@@ -4,22 +4,34 @@ import { Allergy, PatientData, usePatients } from '../hooks/usePatients';
 import axiosInstance from '../components/models/AxiosInstance';
 import { Prescription } from '../hooks/usePatients';
 import { useNavigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
+import {LoadingSkeleton} from './Patients';
+
+
+const LoadingPhase= () => {
+  return (
+    <div>
+      <LoadingSkeleton />
+    </div>
+  )
+}
+
+  
 
 function Prescriptions() {
-  const [patients, setPatients] = useState<PatientData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  
   const  navigate  = useNavigate();
+  let {patients ,loading, error } = usePatients();
 
+  const [Loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchPatients = async () => {
       try {
-        const response = await axiosInstance.get('/api/patients/');
+        setLoading(true);
         const Pres_response = await axiosInstance.get('/api/prescriptions/');
-        let patientsData = response.data;
         let prescriptionsData = Pres_response.data;
-        patientsData.forEach((patient: PatientData) => {
+        patients.forEach((patient: PatientData) => {
                   
                   let patientPrescriptions:Prescription[] = [];
                   
@@ -38,13 +50,10 @@ function Prescriptions() {
                   patient.prescriptions = patientPrescriptions;
                   console.log(patient.prescriptions);
                 });
-        setPatients(response.data);
-        setLoading(false);
-        setError(null);
+                setLoading(false);
       } catch (error: any) {
         console.error('Fetch patients failed:', error);
-        setLoading(false);
-        setError('An error occurred while fetching patients. Please try again.');
+        error='An error occurred while fetching patients. Please try again.';
       }
     };
 
@@ -55,7 +64,13 @@ function Prescriptions() {
   const [searchQuery, setSearchQuery] = useState('');
 
   
- 
+ if(loading){
+    return (
+      <div>
+        Loading....
+      </div>
+    )
+  }
 
   return (
     <div className="p-8">

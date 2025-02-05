@@ -12,6 +12,7 @@ export interface Prescription {
   end_date: Date | string | null;
   status: "active" | "completed" | "cancelled";
   duration: string;
+  sexe: string;
   created_at?: Date | null;
   updated_at?: Date | null;
 }
@@ -65,6 +66,7 @@ export interface PatientData {
   Allergies: Allergy[] | [];
   visit: string[];
   visits: Visit[];
+  sexe: string;
   appointment: string[];
   appointments: Appointment[];
 }

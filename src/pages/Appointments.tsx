@@ -218,7 +218,7 @@ const convertTo12Hour = (time24h: string): string => {
                           }}
                         >
                           <div className="font-medium">{
-                            patients.find((patient) => patient.id === appointment.pat)?.name.split(" ").at(-1)
+                          (patients.find((patient) => patient.id === appointment.pat)?.sexe ?? '') + (patients.find((patient) => patient.id === appointment.pat)?.name.split(" ").at(-1) ?? 'Unknown')
                             }</div>
                           <div className="text-xs">
                             {appointment.place.charAt(0).toUpperCase() + 
