@@ -1,131 +1,72 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../components/models/AxiosInstance';
-import axios from 'axios';
-import { getAccessToken } from '../components/models/AxiosInstance';
-
-interface LoginProps {
-  setIsAuthenticated: (value: boolean) => void;
+interface LoginForm {
+  username: string;
+  password: string;
 }
 
-
-function Login({ setIsAuthenticated }: LoginProps) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState('doctor'); // Default role
-  const [error, setError] = useState('');
+function Login({setIsAuthenticated}: {setIsAuthenticated: React.Dispatch<React.SetStateAction<boolean> | undefined | null>}) {
   const navigate = useNavigate();
-  const isAuthorized = !!getAccessToken();
-  if(isAuthorized){
-    navigate('/dashboard');
-  }
-
-  
-  React.useEffect(() => {
-    alert('Welcome to the login page! Please enter your credentials.');
-    alert('the app is running but you may have some issues with the authentication , token refresh and data fetching because the backend is slow for the moment and we are on our way to improve it soon, Credentials for login are: username:admin password:admin');
-
-  }, []);
+  const [formData, setFormData] = useState<LoginForm>({ username: '', password: '' });
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault(); // Prevent form submission default behavior
-    
+    e.preventDefault();
+    setError(null);
+    setIsLoading(true);
+
     try {
-      const response = await axiosInstance.post('/api/login/', {
-        username: username,
-        password: password,
-      });
-      
-      const { access, refresh } = response.data;
-      localStorage.setItem('access_token', access);
-      localStorage.setItem('refresh_token', refresh);
-      console.log('Login successful');
-      setIsAuthenticated(true);
-      setError('');
-      navigate('/dashboard');
-    } catch (error: any) {
-      console.error('Login failed:', error);
-      
-      if (axios.isAxiosError(error)) {
-        if (error.code === 'ECONNABORTED') {
-          setError('Connection timed out. Please check if the server is running.');
-        } else if (error.response?.status === 404) {
-          setError('Login endpoint not found. Please check API configuration.');
-        } else if (error.response?.status === 401) {
-          setError('Invalid credentials.');
-        } else if (!error.response) {
-          setError('Network error. Please check if the server is running.');
-        } else {
-          setError('An error occurred during login. Please try again.');
-        }
+      const response = await axiosInstance.post('/api/login/', formData);
+      if (response.data.access) {
+        localStorage.setItem('access_token', response.data.access);
+        setIsAuthenticated(true);
+        navigate('/dashboard');
       }
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-50 to-blue-100">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md transition-transform transform ">
-        <h2 className="text-3xl font-extrabold text-blue-700 mb-6 text-center">Welcome Back!</h2>
-        <p className="text-gray-600 text-sm text-center mb-4">
-          Please login to your account to continue.
-        </p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
+        <h2 className="text-3xl font-bold text-center text-gray-900">Login</h2>
         {error && (
-          <div className="mb-4 text-red-600 text-sm bg-red-100 px-4 py-2 rounded-lg">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
             {error}
           </div>
         )}
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-              Username
-            </label>
-            <input
-              type="text"
-              id="username"
-              aria-label="Enter your username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none  focus:ring-2 focus:ring-blue-500 transition duration-200"
-              required
-              placeholder="Enter your username"
-            />
-          </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              aria-label="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-              required
-              placeholder="Enter your password"
-            />
-          </div>
-          <div>
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-              Role
-            </label>
-            <select
-              id="role"
-              aria-label="Select your role"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-            >
-              <option value="doctor">Doctor</option>
-              <option value="patient">Patient</option>
-              <option value="medical">Medical Staff</option>
-            </select>
-          </div>
+        <form className="space-y-6" onSubmit={handleLogin}>
+          <input
+            type="text"
+            name="username"
+            required
+            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+            placeholder="username"
+            onChange={handleChange}
+          />
+          <input
+            type="password"
+            name="password"
+            required
+            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+            placeholder="Password"
+            onChange={handleChange}
+          />
           <button
             type="submit"
-            className="w-full px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 transition duration-200"
+            disabled={isLoading}
+            className="w-full px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 transition duration-200 disabled:bg-blue-300"
           >
-            Login
+            {isLoading ? 'Logging in...' : 'Login'}
           </button>
         </form>
         <div className="text-sm text-gray-500 text-center mt-4">

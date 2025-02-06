@@ -60,7 +60,7 @@ function App() {
             </Route>
           <Route path= "login" element={<Login setIsAuthenticated={setIsAuthenticated} />}  />
           <Route path= "register" element={<SignupPage  />} />
-          <Route path= "*" element={<Navigate to={isAuthenticated ?`/dashboard` : '/login'} />} />
+          <Route path= "*" element={<Navigate to='login' />} />
         </Routes>
       </Router>
     </ThemeProvider>
