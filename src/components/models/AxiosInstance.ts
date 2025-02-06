@@ -3,7 +3,7 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError, In
 // Define the base URL for your Django backend
 const BASE_URL = localStorage.getItem('VITE_API_URL') as string;
 console.log('BASE_URL:', BASE_URL);
-=// Create an Axios instance
+// Create an Axios instance
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: BASE_URL,
   headers: {
