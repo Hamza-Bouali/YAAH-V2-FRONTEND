@@ -1,10 +1,9 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 // Define the base URL for your Django backend
-const BASE_URL = import.meta.env.VITE_API_URL as string;
+const BASE_URL = localStorage.getItem('VITE_API_URL') as string;
 console.log('BASE_URL:', BASE_URL);
-const REFRESH_INTERVAL = 14 * 60 * 1000; // 14 minutes (adjust based on token expiry time)
-// Create an Axios instance
+=// Create an Axios instance
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: BASE_URL,
   headers: {
