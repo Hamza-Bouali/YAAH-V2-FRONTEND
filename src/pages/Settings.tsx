@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { User, Lock, Bell, Globe, CreditCard } from 'lucide-react';
-
+import axiosInstance from '../components/models/AxiosInstance';
 // Reusable Navigation Item Component
 const NavItem = ({ icon: Icon, text, onClick, isActive }) => (
   <button
@@ -194,16 +194,34 @@ const BillingSettings = () => (
   </div>
 );
 
+interface UserData
+{
+  id:String
+  password:String
+  first_name:String
+  last_name:String
+  email:String
+  username:String
+  groups:String[]
+  user_permissions:String[]
+  is_staff:Boolean
+  is_active:Boolean
+  is_superuser:Boolean
+  last_login:String
+  date_joined:String
+}
+
 function Settings() {
   const [activeTab, setActiveTab] = useState('Profile');
+  
+  const [user, setUser] = useState({} as UserData);
   const [formData, setFormData] = useState({
-    firstName: 'David',
-    lastName: 'Smith',
-    email: 'david.smith@example.com',
+    firstName: user.first_name,
+    lastName: user.last_name,
+    email: user.email,
     specialty: 'General Practice',
     bio: 'Board-certified general practitioner with over 15 years of experience...',
   });
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -299,6 +317,24 @@ function Settings() {
     }
   };
 
+
+  useEffect(() => {
+
+    function fetchData()
+    {
+        axiosInstance.get('/api/get_user_data/')
+        .then((response) => {
+          console.log(response.data);
+          setUser(response.data);
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+      
+    }
+
+    fetchData();
+  }, []);
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">

@@ -250,4 +250,9 @@ export const PatientService = {
   async deleteAppointment(appointmentId: string) {
     await axiosInstance.delete(`/api/appointments/${appointmentId}/`);
   },
+
+  async addPatient(patient: Omit<PatientData, 'id'>) {
+    const response = await axiosInstance.post<PatientData>('/api/patients/', patient);
+    return response.data;
+  },
 };

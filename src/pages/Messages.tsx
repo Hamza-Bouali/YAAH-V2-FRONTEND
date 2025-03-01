@@ -6,11 +6,12 @@ import axiosInstance from '../components/models/AxiosInstance';
 // Types
 
 interface Message {
-  id: string;
-  content: string;
-  sender: 'user' | 'other';
-  text:string;
-  created_at:string;
+  id?: string | null;
+  doctor: string;
+  patient: string;
+  text: string;
+  sent_by:'doctor' | 'patient';
+  created_at: string;
 }
 
 interface DoctorData {
@@ -27,13 +28,17 @@ interface DoctorData {
 
 interface Conversation {
   id: number;
-  patient: PatientData | null;
-  doctor: DoctorData | null;
+  patient: string;
+  doctor: string;
+  Patient: PatientData;
+  Doctor?: DoctorData;
   time: string;
   unread: number;
   status: 'online' | 'offline' | 'away';
-  messages: String[];
-  Messages: Message[];
+  Messages?: Message[];
+  messages?: String[];
+  lastMessage?: string;
+  created_at?: string;
 }
 
 // Helper Components
@@ -45,176 +50,142 @@ const Avatar = ({ name, className = '' }: { name: string; className?: string }) 
   </div>
 );
 
+const formatDate = (dateString: string) => {
+  const options: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  };
+  return new Date(dateString).toLocaleDateString(undefined, options);
+};
+
 const MessageBubble = ({ message }: { message: Message }) => (
-  <div className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+  <div className={`flex ${message.sent_by === 'doctor' ? 'justify-end' : 'justify-start'}`}>
     <div 
       className={`rounded-lg p-3 max-w-[70%] ${
-        message.sender === 'user' ? 'bg-blue-50' : 'bg-gray-100'
+        message.sent_by === 'doctor' ? 'bg-blue-50' : 'bg-gray-100'
       }`}
     >
-      <p className="text-sm">{message.content}</p>
-      <span className="text-xs text-gray-500">{message.timestamp}</span>
+      <p className="text-sm">{message.text}</p>
+      <span className="text-xs text-gray-500">{formatDate(message.created_at)}</span>
     </div>
   </div>
 );
 
-// Main Component
 const Messages = () => {
   // Initial state with sample data
-  const [conversations, setConversations] = useState<Conversation[]>([
-    {
-      id: 1,
-      Patient: {
-        id: '1',
-        name: 'John Doe',
-        prescription: [
-          {
-            medication: 'Medication A',
-            dosage: '10mg',
-            frequency: 'Once a day',
-            status: 'Active',
-            duration: '30 days',
-            startDate: '2024-02-15',
-            endDate: '2024-03-15',
-          }
-        ],
-        age: 30,
-        treatment: 'None',
-        email: 'john.doe@example.com',
-        phone: '(555) 123-4567',
-        lastVisit: '2024-02-15',
-        dob: '1994-05-20',
-        bloodType: 'O+',
-        diseases: [{ id: '1', name: 'Hypertension',description: 'High blood pressure'}],
-        nextAppointment: '2024-03-15',
-        address: '123 Main St, Anytown, USA',
-        medications: ['Medication A', 'Medication B'],
-        allergies: ['Peanuts', 'Shellfish'],
-        recentVisits: [
-          {
-            date: '2023-12-01',
-            reason: 'Routine Checkup',
-            doctor: 'Dr. Smith',
-          }
-        ]
-      },
-      lastMessage: 'Thank you for the prescription, doctor.',
-      time: '5m ago',
-      unread: 2,
-      status: 'online',
-      messages: [
-        {
-          id: '1',
-          content: 'Thank you for the prescription, doctor.',
-          timestamp: '10:30 AM',
-          sender: 'other'
-        },
-        {
-          id: '2',
-          content: "You're welcome! Remember to take it as prescribed.",
-          timestamp: '10:31 AM',
-          sender: 'user'
-        }
-      ]
-    },
-    {
-      id: 2,
-      Patient: {
-        id: '2',
-        name: 'Jane Doe',
-        prescription: [
-          {
-            medication: 'Medication A',
-            dosage: '10mg',
-            frequency: 'Once a day',
-            status: 'Active',
-            duration: '30 days',
-            startDate: '2024-02-15',
-            endDate: '2024-03-15',
-          }
-        ],
-        age: 30,
-        treatment: 'None',
-        email: 'jane.doe@example.com',
-        phone: '(555) 123-4567',
-        lastVisit: '2024-02-15',
-        dob: '1994-05-20',
-        bloodType: 'O+',
-        diseases: ['Hypertension'],
-        nextAppointment: '2024-03-15',
-        address: '123 Main St, Anytown, USA',
-        medications: ['Medication A', 'Medication B'],
-        allergies: ['Peanuts', 'Shellfish'],
-        recentVisits: [
-          {
-            date: '2023-12-01',
-            reason: 'Routine Checkup',
-            doctor: 'Dr. Smith',
-          }
-        ]
-      },
-      lastMessage: 'When should I schedule my next appointment?',
-      time: '1h ago',
-      unread: 0,
-      status: 'offline',
-      messages: [
-        {
-          id: '1',
-          content: 'When should I schedule my next appointment?',
-          timestamp: '9:45 AM',
-          sender: 'other'
-        }
-      ]
-    }
-  ]);
-  
+  const [conversations, setConversations] = useState<Conversation[]>();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  
+  const [patients, setPatients] = useState<PatientData[]>();
+  const [doctor, setDoctor] = useState<DoctorData>();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [loadingConversations, setLoadingConversations] = useState(false);
+  const [loadingMessages, setLoadingMessages] = useState(false);
 
   // Effects
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+    const fetchData = async () => {
+      setLoadingConversations(true);
+      setLoadingMessages(true);
+      try {
+        const [conversationsRes, patientsRes, doctorRes, messRes] = await Promise.all([
+          axiosInstance.get('api/conversations/'),
+          axiosInstance.get('api/patients/'),
+          axiosInstance.get('api/get_user_data/'),
+          axiosInstance.get('api/messages/'),
+        ]);
+
+        const conversations = conversationsRes.data;
+        const patients = patientsRes.data;
+        const doctorData = doctorRes.data;
+        const allMessages = messRes.data;
+
+        setPatients(patients);
+        setDoctor(doctorData);
+
+        const updatedConversations = conversations.map((conv: Conversation) => {
+          const patient = patients.find((p: PatientData) => p.id === conv.patient);
+          const messages = allMessages.filter((msg: Message) => msg.id && conv.messages?.includes(msg.id as string));
+
+          if (patient) conv.Patient = patient;
+          if (doctorData) conv.Doctor = doctorData;
+
+          conv.Messages = messages;
+          return conv;
+        });
+
+        setConversations(updatedConversations);
+      } catch (e) {
+        console.log(e);
+      } finally {
+        setLoadingConversations(false);
+        setLoadingMessages(false);
+      }
+
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
+    };
+
+    fetchData();
   }, [selectedConversation?.messages]);
 
   // Filter conversations based on search query
-  const filteredConversations = conversations.filter(conv =>
-    conv.Patient?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conv.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredConversations = conversations;
 
   // Handlers
-  const handleSendMessage = () => {
+  const handleSendMessage =async ()  => {
     if (!newMessage.trim() || !selectedConversation) return;
 
     const newMsg: Message = {
-      id: Date.now().toString(),
-      content: newMessage,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      sender: 'user'
+      
+      text: newMessage,
+      created_at: new Date().toISOString(),
+      sent_by: 'doctor',
+      doctor: 'Dr. John Doe',
+      patient: selectedConversation.Patient?.name || 'Unknown Patient',
     };
 
-    const updatedConversations = conversations.map(conv => {
+    const updatedConversations = conversations?.map((conv: Conversation) => {
       if (conv.id === selectedConversation.id) {
         return {
           ...conv,
-          messages: [...conv.messages, newMsg],
+          messages: [...(conv.messages || []), newMessage], // Use newMessage here
+          Messages: [...(conv.Messages || []), newMsg], // Use newMsg here
           lastMessage: newMessage,
-          time: 'Just now'
+          created_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         };
       }
       return conv;
     });
 
+   const  messageResp=await axiosInstance.post('api/messages/', {
+      text: newMessage,
+      doctor: selectedConversation.doctor,
+      patient: selectedConversation.patient,
+      sender: patients?.filter((p) => p.id === selectedConversation.patient)[0].id,
+      sent_by: 'doctor',
+       // Replace with actual user info
+    });
+
+    axiosInstance.put(`api/conversations/${selectedConversation.id}/`, {
+      doctor: doctor?.id,
+      patient: patients?.filter((p) => p.id === selectedConversation.patient)[0].id,
+      messages: [...(selectedConversation.messages || []), messageResp.data.message_id],
+      lastMessage: newMessage,
+      
+    }
+    );
+
     setConversations(updatedConversations);
     setNewMessage('');
     setSelectedConversation({
       ...selectedConversation,
-      messages: [...selectedConversation.messages, newMsg]
+      Messages: [...(selectedConversation.Messages ?? []), newMsg],
     });
   };
 
@@ -227,7 +198,7 @@ const Messages = () => {
 
         <div className="bg-white rounded-xl flex h-[calc(100vh-180px)]">
           {/* Conversations List */}
-          <div className="w-1/3 border-r">
+          <div className="w-1/3 border-r overflow-y-auto">
             <div className="p-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -240,8 +211,8 @@ const Messages = () => {
                 />
               </div>
             </div>
-            <div className="divide-y overflow-y-auto">
-              {filteredConversations.map((conversation) => (
+            <div className="divide-y overflow-y-auto max-h-[calc(100vh-240px)]">
+              {filteredConversations?.map((conversation) => (
                 <div
                   key={conversation.id}
                   className={`p-4 hover:bg-gray-50 cursor-pointer flex items-center space-x-4 ${
@@ -258,7 +229,9 @@ const Messages = () => {
                       <p className="text-xs text-gray-500">{conversation.time}</p>
                     </div>
                     <p className="text-sm text-gray-500 truncate">
-                      {conversation.lastMessage}
+                      {conversation.Messages && conversation.Messages.length > 0
+                        ? conversation.Messages[conversation.Messages.length - 1].text
+                        : 'No messages yet'}
                     </p>
                   </div>
                   {conversation.unread > 0 && (
@@ -298,9 +271,13 @@ const Messages = () => {
 
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {selectedConversation.messages.map((message) => (
+                {selectedConversation.Messages?.length ?? 0 > 0 ? selectedConversation.Messages?.map((message: Message) => (
                   <MessageBubble key={message.id} message={message} />
-                ))}
+                )) : (
+                  <div className="flex-1 flex items-center justify-center text-gray-500">
+                    No messages yet
+                  </div>
+                )}
                 <div ref={messagesEndRef} />
               </div>
 
@@ -315,7 +292,7 @@ const Messages = () => {
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                     className="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <button 
+                  <button
                     onClick={handleSendMessage}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >

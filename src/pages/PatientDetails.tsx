@@ -246,7 +246,8 @@ const PatientDetails = () => {
             appointment: [],
             address: '',
             treatment: '',
-            Allergies: []
+            Allergies: [],
+            sexe: "male",
           } as PatientData);
         });
     }
@@ -258,7 +259,12 @@ const PatientDetails = () => {
     try {
       setIsLoading(true);
       setError(null);
-      await PatientService.updatePatient(patient.id, patient);
+      if(id==='new')
+      {
+        await PatientService.addPatient(patient);
+      }
+      else{
+      await PatientService.updatePatient(patient.id, patient);}
       await refetchPatients();
       setIsEditing(false);
     } catch (err) {

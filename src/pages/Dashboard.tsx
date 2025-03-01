@@ -7,7 +7,7 @@ import { LoadingSkeleton } from './LoadingSkeleton';
 import { useNavigate } from 'react-router-dom';
 import { daysInWeek } from 'date-fns/constants';
 import { format,parse } from 'date-fns';
-
+import { Loader2 } from 'lucide-react';
 
 
 
@@ -86,22 +86,16 @@ function Dashboard() {
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
-  // Sample patient data for diseases, medications, and treatments
   const { patients, loading, error } = usePatients();
   const Tpatients=patients.slice(0, 10);
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axiosInstance.get('/api/statistics/');
-        console.log(patients);
-        console.log("appointments",appointmentData);
-        console.log(response.data);
-      } catch (error) {
-        console.error('Error fetching patient data:', error);
-      }
-    };
-    fetchData();
-  }, []);
+  
+  if(loading){
+    return (
+      <div className='flex items-center justify-center h-screen'>
+        <Loader2 className='animate-spin' />
+      </div>
+    )
+  }
 
 
   return (

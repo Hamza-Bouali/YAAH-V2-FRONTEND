@@ -66,8 +66,8 @@ function Prescriptions() {
   
  if(loading){
     return (
-      <div>
-        Loading....
+      <div className='flex items-center justify-center h-screen'>
+        <Loader2 className='animate-spin' />
       </div>
     )
   }

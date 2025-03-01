@@ -10,13 +10,13 @@ import {
 } from "../components/models/Appointements"
 import { usePatients } from "../hooks/usePatients"
 import { format, addDays, startOfWeek, parse } from "date-fns"
-
+import { LucideLoader2 } from "lucide-react"
 
 
 function Appointments() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [appointments, setAppointments] = useState<Appointment[]>([])
-  const patients = usePatients().patients
+  const {patients,loading,error} = usePatients()
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false)
   const [isClientModalOpen, setIsClientModalOpen] = useState(false)
   const [selectedClient, setSelectedClient] = useState("")
@@ -126,6 +126,13 @@ const convertTo12Hour = (time24h: string): string => {
     }
   }
 
+   if(loading){
+      return (
+        <div className='flex items-center justify-center h-screen w-full'>
+          <LucideLoader2 className='animate-spin' />
+        </div>
+      )
+    }
   return (
     <div className="p-8">
       <AppointmentModal
