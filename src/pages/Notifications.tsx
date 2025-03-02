@@ -27,14 +27,58 @@ function Notifications() {
     };
     fetchNotifications();
   }, []);
+
+
+  const deleteNotification = async (id: number) => {
+    try {
+      await axiosInstance.delete(`api/notifications/${id}/`);
+      setNotifications((prevNotifications) =>
+        prevNotifications.filter((notification) => notification.id !== id)
+      );
+    } catch (error) {
+      console.error('Failed to delete notification:', error);
+    }
+  }
         
+  const markRead = async (id:number) => {
+    try {
+      await axiosInstance.put(`api/notifications/${id}/`, {
+        ...notifications.find((notification) => notification.id === id),
+        is_seen: true,
+      });
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((notification) =>
+          notification.id === id ? { ...notification, is_seen: true } : notification 
+        )
+      );
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  }
+
+  const markAllRead = async () => {
+    try {
+      notifications.map(async (notification) => {
+        await axiosInstance.put(`api/notifications/${notification.id}/`, {
+          ...notification,
+          is_seen: true,
+        });
+      });
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((notification) => ({ ...notification, is_seen: true }))
+      );
+    }
+    catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+    }
+  }
 
 
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Notifications</h1>
-        <button className="text-blue-600 hover:text-blue-700">
+        <button className="text-blue-600 hover:text-blue-700" onClick={()=>markAllRead()} >
           Mark all as read
         </button>
       </div>
@@ -55,10 +99,10 @@ function Notifications() {
               <p className="text-sm text-gray-500 mt-1">{notification.created_at}</p>
             </div>
             <div className="flex space-x-2">
-              <button className="p-2 hover:bg-gray-100 rounded-lg">
+              <button className="p-2 hover:bg-gray-100 rounded-lg" onClick={()=>markRead(notification.id)} >
                 <Check className="w-5 h-5 text-green-600" />
               </button>
-              <button className="p-2 hover:bg-gray-100 rounded-lg">
+              <button className="p-2 hover:bg-gray-100 rounded-lg" onClick={() => deleteNotification(notification.id)}>
                 <X className="w-5 h-5 text-red-600" />
               </button>
             </div>

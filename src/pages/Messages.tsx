@@ -88,10 +88,12 @@ const Messages = () => {
 
   // Effects
   useEffect(() => {
+    
     const fetchData = async () => {
       setLoadingConversations(true);
       setLoadingMessages(true);
       try {
+        setLoadingConversations(true);
         const [conversationsRes, patientsRes, doctorRes, messRes] = await Promise.all([
           axiosInstance.get('api/conversations/'),
           axiosInstance.get('api/patients/'),
@@ -188,6 +190,10 @@ const Messages = () => {
       Messages: [...(selectedConversation.Messages ?? []), newMsg],
     });
   };
+
+  if(loadingConversations || loadingMessages){
+    return <div>Loading...</div>
+  }
 
   return (
     <div className="m-8 bg-white rounded-lg shadow-lg">

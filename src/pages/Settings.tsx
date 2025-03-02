@@ -1,8 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { User, Lock, Bell, Globe, CreditCard } from 'lucide-react';
 import axiosInstance from '../components/models/AxiosInstance';
+import { set } from 'date-fns';
 // Reusable Navigation Item Component
-const NavItem = ({ icon: Icon, text, onClick, isActive }) => (
+
+
+
+interface NavItemProps {
+  icon: React.ComponentType<{ className?: string }>;
+  text: string;
+  onClick: () => void;
+  isActive: boolean;
+}
+
+const NavItem: React.FC<NavItemProps> = ({ icon: Icon, text, onClick, isActive }) => (
   <button
     onClick={onClick}
     className={`flex items-center w-full p-3 text-gray-600 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors duration-200 ${
@@ -16,7 +27,16 @@ const NavItem = ({ icon: Icon, text, onClick, isActive }) => (
 );
 
 // Reusable Input Field Component
-const InputField = ({ label, type = 'text', value, onChange, placeholder }) => (
+interface InputFieldProps {
+  label: string;
+  type?: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder?: string;
+  name?: string;
+}
+
+const InputField: React.FC<InputFieldProps> = ({ label, type = 'text', value, onChange, placeholder, name }) => (
   <div>
     <label className="block text-sm font-medium text-gray-700 mb-2">
       {label}
@@ -26,13 +46,22 @@ const InputField = ({ label, type = 'text', value, onChange, placeholder }) => (
       value={value}
       onChange={onChange}
       placeholder={placeholder}
+      name={name}
       className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
-    />
+      />
   </div>
 );
 
 // Reusable TextArea Component
-const TextAreaField = ({ label, value, onChange, placeholder, rows = 4 }) => (
+interface TextAreaFieldProps {
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  placeholder?: string;
+  rows?: number;
+}
+
+const TextAreaField: React.FC<TextAreaFieldProps> = ({ label, value, onChange, placeholder, rows = 4 }) => (
   <div>
     <label className="block text-sm font-medium text-gray-700 mb-2">
       {label}
@@ -63,11 +92,15 @@ const SecuritySettings = () => (
         label="New Password"
         type="password"
         placeholder="Enter your new password"
+        value=""
+        onChange={() => {}}
       />
       <InputField
         label="Confirm New Password"
         type="password"
         placeholder="Confirm your new password"
+        value=""
+        onChange={() => {}}
       />
       <div className="flex justify-end space-x-4">
         <button
@@ -165,17 +198,30 @@ const BillingSettings = () => (
         label="Card Number"
         type="text"
         placeholder="Enter your card number"
+        value=""
+        onChange={() => {}}
+      />
+      <InputField
+        label="Card Holder"
+        type="text"
+        placeholder="Enter your card holder name"
+        value=""
+        onChange={() => {}}
       />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <InputField
           label="Expiration Date"
           type="text"
           placeholder="MM/YY"
+          value=""
+          onChange={() => {}}
         />
         <InputField
           label="CVV"
           type="text"
           placeholder="123"
+          value=""
+          onChange={() => {}}
         />
       </div>
       <div className="flex justify-end space-x-4">
@@ -198,19 +244,20 @@ const BillingSettings = () => (
 
 interface UserData
 {
-  id:String
-  password:String
-  first_name:String
-  last_name:String
-  email:String
-  username:String
-  groups:String[]
-  user_permissions:String[]
-  is_staff:Boolean
-  is_active:Boolean
-  is_superuser:Boolean
-  last_login:String
-  date_joined:String
+  id: string
+  password: string
+  first_name: string
+  phone_number: string
+  last_name: string
+  email: string
+  username: string
+  groups: string[]
+  user_permissions: string[]
+  is_staff: boolean
+  is_active: boolean
+  is_superuser: boolean
+  last_login: string
+  date_joined: string
 }
 
 function Settings() {
@@ -224,14 +271,26 @@ function Settings() {
     specialty: 'General Practice',
     bio: 'Board-certified general practitioner with over 15 years of experience...',
   });
-  const handleChange = (e) => {
+  const handleChange = (e:any) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setUser((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e:any) => {
     e.preventDefault();
     console.log('Form Data:', formData);
+    await axiosInstance.put('/api/update_user_data/', {
+      ...formData,
+    })
+    .then((response) => {
+      console.log(response.data);
+    }
+    )
+    .catch((error) => {
+      console.log(error);
+    }
+    );
   };
 
   useEffect(() => {
@@ -287,6 +346,20 @@ function Settings() {
                 onChange={handleChange}
               />
               <InputField
+                label="Username"
+                type="text"
+                value={user.username}
+                onChange={() => {}}
+                placeholder="Enter your username"
+              />
+              <InputField
+                label="phone number"
+                type="text"
+                value={user.phone_number}
+                onChange={() => {}}
+                placeholder="Enter your phone number"
+              />
+              <InputField
                 label="Specialty"
                 name="specialty"
                 value={formData.specialty}
@@ -294,7 +367,7 @@ function Settings() {
               />
               <TextAreaField
                 label="Bio"
-                name="bio"
+                placeholder="bio"
                 value={formData.bio}
                 onChange={handleChange}
               />
