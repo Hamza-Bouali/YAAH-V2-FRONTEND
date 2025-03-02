@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 // Define the base URL for your Django backend
-const BASE_URL = "https://yaah-v2-backend.onrender.com" as string;
+const BASE_URL = "http://127.0.0.1:8000" as string;
 console.log('BASE_URL:', BASE_URL);
 // Create an Axios instance
 const axiosInstance: AxiosInstance = axios.create({

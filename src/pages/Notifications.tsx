@@ -1,32 +1,35 @@
 import React from 'react';
 import { Bell, Check, X } from 'lucide-react';
+import axiosInstance from '../components/models/AxiosInstance';
+interface Notification {
+  id: number;
+  type: 'appointment' | 'lab' | 'prescription';
+  title: string;
+  subtitle: string;
+  created_at: string;
+  is_seen: boolean;
+}
 
-const notifications = [
-  {
-    id: 1,
-    type: 'appointment',
-    message: 'New appointment request from Sarah Wilson',
-    time: '5 minutes ago',
-    unread: true,
-  },
-  {
-    id: 2,
-    type: 'lab',
-    message: 'Lab results ready for John Doe',
-    time: '1 hour ago',
-    unread: true,
-  },
-  {
-    id: 3,
-    type: 'prescription',
-    message: 'Prescription renewal request from Mike Johnson',
-    time: '2 hours ago',
-    unread: false,
-  },
-  // Add more notifications
-];
+
+
 
 function Notifications() {
+
+  const [notifications, setNotifications] = React.useState<Notification[]>([]);
+  React.useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await axiosInstance.get('api/notifications/');
+        setNotifications(response.data);
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+      }
+    };
+    fetchNotifications();
+  }, []);
+        
+
+
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
@@ -41,15 +44,15 @@ function Notifications() {
           <div
             key={notification.id}
             className={`p-4 flex items-start space-x-4 ${
-              notification.unread ? 'bg-blue-50' : ''
+              notification.is_seen ? 'bg-blue-50' : ''
             }`}
           >
             <div className="p-2 bg-blue-100 rounded-lg">
               <Bell className="w-5 h-5 text-blue-600" />
             </div>
             <div className="flex-1">
-              <p className="text-gray-800">{notification.message}</p>
-              <p className="text-sm text-gray-500 mt-1">{notification.time}</p>
+              <p className="text-gray-800">{notification.subtitle}</p>
+              <p className="text-sm text-gray-500 mt-1">{notification.created_at}</p>
             </div>
             <div className="flex space-x-2">
               <button className="p-2 hover:bg-gray-100 rounded-lg">

@@ -53,6 +53,8 @@ const SecuritySettings = () => (
     <h2 className="text-lg font-semibold mb-6">Security Settings</h2>
     <form className="space-y-6">
       <InputField
+        value={''}
+        onChange={() => {}}
         label="Current Password"
         type="password"
         placeholder="Enter your current password"
@@ -232,6 +234,15 @@ function Settings() {
     console.log('Form Data:', formData);
   };
 
+  useEffect(() => {
+    setFormData({
+      firstName: user.first_name,
+      lastName: user.last_name,
+      email: user.email,
+      specialty: 'General Practice',
+      bio: 'Board-certified general practitioner with over 15 years of experience...',
+    });
+  }, [user]);
   const renderContent = () => {
     switch (activeTab) {
       case 'Profile':
