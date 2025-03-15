@@ -2456,7 +2456,7 @@ const SignupPage: React.FC = () => {
   
       // Send to API
       try {
-        const response = await fetch("http://127.0.0.1:8000/users/", {
+        const response = await fetch("https://yaah-v2-backend.onrender.com/users/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
