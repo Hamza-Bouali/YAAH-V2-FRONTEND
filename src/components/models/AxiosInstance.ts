@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 // Define the base URL for your Django backend
-const BASE_URL = "https://yaah-v2-backend.onrender.com" as string;
+const BASE_URL = "http://127.0.0.1:8000" as string;
 console.log('BASE_URL:', BASE_URL);
 // Create an Axios instance
 const axiosInstance: AxiosInstance = axios.create({
@@ -9,10 +9,11 @@ const axiosInstance: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 50000, // 10 seconds timeout
+  timeout: 120000, // 10 seconds timeout
 });
 
 // Function to get the access token from localStorage
+
 
 
 
@@ -41,5 +42,17 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-
+axiosInstance.interceptors.response.use(
+  response => response,
+  error => {
+      if (error.code === 'ECONNABORTED') {
+          console.error('Request timed out. Please try again later.');
+      } else if (error.response?.status === 401) {
+          // Token is invalid or expired
+          localStorage.removeItem('access_token');
+          window.location.href = '/login';  // Redirect to login page
+      }
+      return Promise.reject(error);
+  }
+);
 export default axiosInstance;

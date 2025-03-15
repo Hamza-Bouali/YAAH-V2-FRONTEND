@@ -127,7 +127,7 @@ const Messages = () => {
         setLoadingConversations(false);
         setLoadingMessages(false);
       }
-
+  
       if (messagesEndRef.current) {
         messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
       }
@@ -140,58 +140,73 @@ const Messages = () => {
   const filteredConversations = conversations;
 
   // Handlers
-  const handleSendMessage =async ()  => {
+  const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation) return;
-
+  
     const newMsg: Message = {
-      
       text: newMessage,
       created_at: new Date().toISOString(),
       sent_by: 'doctor',
-      doctor: 'Dr. John Doe',
-      patient: selectedConversation.Patient?.name || 'Unknown Patient',
-    };
-
-    const updatedConversations = conversations?.map((conv: Conversation) => {
-      if (conv.id === selectedConversation.id) {
-        return {
-          ...conv,
-          messages: [...(conv.messages || []), newMessage], // Use newMessage here
-          Messages: [...(conv.Messages || []), newMsg], // Use newMsg here
-          lastMessage: newMessage,
-          created_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        };
-      }
-      return conv;
-    });
-
-   const  messageResp=await axiosInstance.post('api/messages/', {
-      text: newMessage,
-      doctor: selectedConversation.doctor,
+      doctor: doctor?.id || 'Unknown Doctor',
       patient: selectedConversation.patient,
-      sender: patients?.filter((p) => p.id === selectedConversation.patient)[0].id,
-      sent_by: 'doctor',
-       // Replace with actual user info
-    });
-
-    axiosInstance.put(`api/conversations/${selectedConversation.id}/`, {
-      doctor: doctor?.id,
-      patient: patients?.filter((p) => p.id === selectedConversation.patient)[0].id,
-      messages: [...(selectedConversation.messages || []), messageResp.data.message_id],
-      lastMessage: newMessage,
-      
+    };
+  
+    try {
+      // Log the doctor object to verify its contents
+      console.log('Doctor object:', doctor);
+  
+      // Send the new message to the backend
+      const messageResp = await axiosInstance.post('api/messages/', {
+        text: newMessage,
+        doctor: selectedConversation.doctor,
+        patient: selectedConversation.patient,
+        sender: selectedConversation.Patient.id, // Ensure this is a valid primary key
+        sent_by: 'doctor',
+      });
+  
+      // Update the conversation with the new message
+      const updatedConversations = conversations?.map((conv: Conversation) => {
+        if (conv.id === selectedConversation.id) {
+          return {
+            ...conv,
+            messages: [...(conv.messages || []), messageResp.data.message_id],
+            Messages: [...(conv.Messages || []), newMsg],
+            lastMessage: newMessage,
+            created_at: new Date().toISOString(),
+          };
+        }
+        return conv;
+      });
+  
+      // Update the conversation in the backend
+      await axiosInstance.put(`api/conversations/${selectedConversation.id}/`, {
+        doctor: doctor?.id,
+        patient: selectedConversation.patient,
+        messages: [...(selectedConversation.messages || []), messageResp.data.message_id],
+        lastMessage: newMessage,
+      });
+  
+      // Update the state with the new conversation data
+      setConversations(updatedConversations);
+      setNewMessage('');
+      setSelectedConversation({
+        ...selectedConversation,
+        Messages: [...(selectedConversation.Messages ?? []), newMsg],
+      });
+  
+      // Scroll to the bottom of the messages
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      if (error.response) {
+        console.error('Response data:', error.response.data);
+      }
     }
-    );
-
-    setConversations(updatedConversations);
-    setNewMessage('');
-    setSelectedConversation({
-      ...selectedConversation,
-      Messages: [...(selectedConversation.Messages ?? []), newMsg],
-    });
   };
 
-  if(loadingConversations || loadingMessages){
+  if((loadingConversations || loadingMessages) && !conversations) {
     return <div>Loading...</div>
   }
 
